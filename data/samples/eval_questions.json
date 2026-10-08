@@ -1,0 +1,40 @@
+{
+  "questions": [
+    {
+      "id": "Q01",
+      "query": "How does RAG combine parametric and non-parametric memory?",
+      "expected_documents": ["rag_2020"],
+      "type": "semantic"
+    },
+    {
+      "id": "Q02",
+      "query": "How does ReAct combine reasoning and acting?",
+      "expected_documents": ["react_2022"],
+      "type": "semantic"
+    },
+    {
+      "id": "Q03",
+      "query": "How does Self-RAG differ from traditional RAG?",
+      "expected_documents": ["rag_2020", "self_rag_2023"],
+      "type": "comparison"
+    },
+    {
+      "id": "Q04",
+      "query": "What are the differences between NetMHCpan-4.1 and NetMHCIIpan-4.0?",
+      "expected_documents": ["netmhcpan_2020"],
+      "type": "domain_specific"
+    },
+    {
+      "id": "Q05",
+      "query": "What is MixMHC2pred-2.0 used for?",
+      "expected_documents": ["mixmhc2pred_2023"],
+      "type": "exact_identifier"
+    },
+    {
+      "id": "Q06",
+      "query": "Compare the approaches of NetMHCIIpan and MixMHC2pred.",
+      "expected_documents": ["netmhcpan_2020", "mixmhc2pred_2023"],
+      "type": "comparison"
+    }
+  ]
+}
