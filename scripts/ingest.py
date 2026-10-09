@@ -5,7 +5,7 @@ from pathlib import Path
 from veridex.config import settings
 from veridex.rag.chunking import chunk_documents
 from veridex.rag.ingestion import load_corpus
-from veridex.rag.vectorstore import index_documents
+from veridex.rag.vectorstore import assert_index_not_in_use, index_documents
 
 
 def main():
@@ -23,6 +23,7 @@ def main():
         # Restrict deletion to the configured local index.
         if index_dir == Path.cwd().resolve():
             raise ValueError("Refusing to delete project root.")
+        assert_index_not_in_use(index_dir)
         shutil.rmtree(index_dir)
 
     documents = load_corpus(
