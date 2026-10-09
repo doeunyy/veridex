@@ -172,6 +172,8 @@ activemq-data/
 # ------------------------------------------------------------
 docs/_build/
 /site
+# Personal development notes
+/docs/development_notes.md
 
 # ------------------------------------------------------------
 # 14. Miscellaneous Generated Files
