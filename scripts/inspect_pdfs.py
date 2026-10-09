@@ -1,8 +1,8 @@
+from collections import Counter
 from pathlib import Path
 
 from veridex.config import settings
 from veridex.rag.ingestion import load_corpus
-from collections import Counter
 
 
 def main():
@@ -19,11 +19,8 @@ def main():
         print("Page:", document.metadata["page"])
         print("Characters:", len(document.page_content))
         print("Preview:", document.page_content[:300])
-        
-    page_counts = Counter(
-        doc.metadata["document_id"]
-        for doc in documents
-    )
+
+    page_counts = Counter(doc.metadata["document_id"] for doc in documents)
 
     print("\nPages per document:")
     for document_id, count in page_counts.items():

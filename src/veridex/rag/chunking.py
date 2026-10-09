@@ -18,9 +18,7 @@ def chunk_documents(
 
     for index, chunk in enumerate(chunks):
         chunk.metadata["chunk_id"] = (
-            f"{chunk.metadata['document_id']}"
-            f"_p{chunk.metadata['page']}"
-            f"_c{index:05d}"
+            f"{chunk.metadata['document_id']}_p{chunk.metadata['page']}_c{index:05d}"
         )
 
     return chunks

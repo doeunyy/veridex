@@ -1,8 +1,21 @@
+import re
+
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
 from veridex.config import settings
 from veridex.rag.retrieval import search_documents
+
+
+def find_invalid_citations(
+    answer: str,
+    sources: list[dict],
+) -> set[str]:
+    """Find source labels referenced but not retrieved."""
+    cited_labels = set(re.findall(r"\[S\d+\]", answer))
+    valid_labels = {f"[{source['label']}]" for source in sources}
+
+    return cited_labels - valid_labels
 
 
 SYSTEM_PROMPT = """
@@ -77,7 +90,15 @@ def answer_question(query: str, top_k: int = 5) -> dict:
         ]
     )
 
+    answer_text = response.content
+
+    invalid_citations = find_invalid_citations(
+        answer_text,
+        sources,
+    )
+
     return {
-        "answer": response.content,
+        "answer": answer_text,
         "sources": sources,
+        "invalid_citations": sorted(invalid_citations),
     }

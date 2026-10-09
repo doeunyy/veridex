@@ -19,11 +19,7 @@ def main():
     print("=" * 60)
 
     for source in result["sources"]:
-        print(
-            f"[{source['label']}] "
-            f"{source['title']} "
-            f"(PDF page {source['page']})"
-        )
+        print(f"[{source['label']}] {source['title']} (PDF page {source['page']})")
         print(source["source_url"])
 
 
