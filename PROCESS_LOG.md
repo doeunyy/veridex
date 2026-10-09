@@ -40,7 +40,25 @@
 
 ### Phase 02 — LangGraph Agent & Memory
 
-_To be completed._
+**Implementation**
+
+- Implemented a MessagesState-based LangGraph agent with evidence-grounded prompting, LLM-driven tool selection, conditional routing, and iterative `search_evidence` execution.
+- Added session memory with `InMemorySaver` and `thread_id`, an AgentService interface with tracing, an interactive CLI, and Mermaid graph visualization.
+- Reproduced a concurrent Chroma initialization race and added lock-protected, configuration-aware caching and index lifecycle safeguards without deleting or rebuilding the existing index.
+
+**Verification**
+
+- Passed 42 unit tests, including 10 Chroma regression cases; four integration tests passed during development (user-reported).
+- Manually verified direct responses, source-cited retrieval, multi-step comparisons, session memory/isolation, and insufficient-evidence handling (user-reported); unit tests also cover mocked tool-error handling.
+- The previously failing three-paper comparison completed with six successful tool calls and normal termination after the fix (user-reported).
+- Passed Ruff lint and formatting checks and confirmed ignore rules for secrets, PDFs, indexes, and private notes.
+
+**Limitations**
+
+- Memory is process-local, and LLM tool selection and call counts may vary between runs.
+- Chroma initialization locking is process-local; concurrent rebuilding across processes remains unsupported.
+- Citations do not establish claim-level factual support, and real API failure recovery is not exhaustively tested.
+- MCP integration and Cloud Run deployment remain future work.
 
 ### Phase 03 — MCP Integration
 
