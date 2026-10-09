@@ -34,14 +34,12 @@ class AgentService:
         return final_message.content
 
     def get_history(self, session_id: str):
-        config = {
-            "configurable": {"thread_id": session_id}
-        }
+        config = {"configurable": {"thread_id": session_id}}
 
         snapshot = self.graph.get_state(config)
 
         return snapshot.values.get("messages", [])
-    
+
     def chat_with_trace(self, query: str, session_id: str) -> dict:
         """Run an agent turn and return the final answer with tool calls."""
         if not query.strip() or not session_id.strip():
@@ -53,22 +51,14 @@ class AgentService:
         }
 
         previous = self.graph.get_state(config)
-        previous_ids = {
-            msg.id
-            for msg in previous.values.get("messages", [])
-            if msg.id is not None
-        }
+        previous_ids = {msg.id for msg in previous.values.get("messages", []) if msg.id is not None}
 
         result = self.graph.invoke(
             {"messages": [HumanMessage(content=query)]},
             config=config,
         )
 
-        new_messages = [
-            msg
-            for msg in result["messages"]
-            if msg.id not in previous_ids
-        ]
+        new_messages = [msg for msg in result["messages"] if msg.id not in previous_ids]
 
         tool_calls = []
         tool_results = []
@@ -97,4 +87,3 @@ class AgentService:
             "tool_calls": tool_calls,
             "tool_results": tool_results,
         }
-

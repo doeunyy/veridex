@@ -36,7 +36,8 @@ def main():
                 session_id=args.session_id,
             )
             print(f"\nVeridex: {answer}\n")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
+            # Keep the CLI running if an individual request fails.
             print(f"\nError: {type(exc).__name__}: {exc}\n")
 
 
