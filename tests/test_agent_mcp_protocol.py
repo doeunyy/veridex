@@ -20,6 +20,8 @@ async def test_all_scenarios_with_real_servers_and_mock_model(connections):
     responses = [response for query, turns, names in SCENARIOS.values() for response in turns]
     responses.extend(
         [
+            request(call("search_web", {"query": "recovery"}, call_id="web-recovery")),
+            AIMessage(content="The web search recovered and returned a source."),
             request(call("search_evidence", {"query": "Self-RAG"})),
             AIMessage(content="Self-RAG uses retrieval and critique."),
             AIMessage(content="Its benefits include evidence grounding."),
@@ -42,6 +44,7 @@ async def test_all_scenarios_with_real_servers_and_mock_model(connections):
                 if scenario == "tool-failure":
                     assert result["status"] == "error"
                     assert result["structured_content"] is None
+                    assert result["artifact"] is None
                 else:
                     assert result["status"] == "success"
                     assert result["artifact"]["structured_content"] == result["structured_content"]
@@ -57,6 +60,12 @@ async def test_all_scenarios_with_real_servers_and_mock_model(connections):
         assert traces["no-tool"]["call_counts"] == {}
         assert "insufficient" in traces["insufficient"]["response"]
         assert "failed" in traces["tool-failure"]["response"]
+        recovery = await service.achat_with_trace("Try web search again", "tool-failure")
+        assert recovery["call_counts"] == {"search_web": 1}
+        assert len(recovery["tool_results"]) == 1
+        assert recovery["tool_results"][0]["status"] == "success"
+        assert recovery["tool_results"][0]["server_identity"] == "Veridex Web Search"
+        assert recovery["tool_results"][0]["structured_content"]["results"][0]["url"] == SOURCE_URL
         await service.achat("Explain Self-RAG", "memory")
         await service.achat("What are its benefits?", "memory")
         await service.achat("Hello", "isolated")

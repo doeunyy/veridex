@@ -466,3 +466,40 @@ async def test_incomplete_registry_fails_before_model_binding(fake_servers):
             pytest.fail("An incomplete agent registry must not be usable")
     assert model.tools is None
     assert len(fake.closed) == 3
+
+
+@pytest.mark.asyncio
+async def test_cancelled_agent_tool_round_repairs_history(fake_servers):
+    fake, _ = fake_servers
+    started = asyncio.Event()
+
+    async def stalled(*args, **kwargs):
+        started.set()
+        await asyncio.Event().wait()
+
+    fake.sessions["evidence"].call_tool.side_effect = stalled
+    model = ScriptedModel(
+        [
+            request(call("search_evidence", {"query": "Self-RAG"})),
+            AIMessage(content="The previous tool request was cancelled."),
+        ]
+    )
+    async with open_mcp_agent_service({}, model=model) as service:
+        turn = asyncio.create_task(service.achat("Explain Self-RAG", "cancelled"))
+        await asyncio.wait_for(started.wait(), 2)
+        turn.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await turn
+        history = await service.aget_history("cancelled")
+        requested = {
+            item["id"] for message in history if message.type == "ai" for item in message.tool_calls
+        }
+        answered = {message.tool_call_id for message in history if message.type == "tool"}
+        assert requested == answered
+        errors = [message for message in history if message.type == "tool"]
+        assert errors and all(
+            message.status == "error" and message.artifact is None for message in errors
+        )
+        assert all(message.additional_kwargs["execution_interrupted"] for message in errors)
+        followup = await service.achat_with_trace("What happened?", "cancelled")
+        assert followup["call_counts"] == {} and "cancelled" in followup["response"]

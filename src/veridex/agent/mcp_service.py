@@ -137,6 +137,11 @@ class MCPAgentService:
                 response = result["messages"][-1].content
                 if not isinstance(response, str):
                     raise TypeError("Expected a text-only agent response.")
+            except asyncio.CancelledError:
+                # Preserve cancellation while leaving a valid tool-message history for follow-ups.
+                snapshot = await self.graph.aget_state(config)
+                await self._finish_interrupted_round(config, snapshot.values)
+                raise
             except (GraphRecursionError, TimeoutError) as exc:
                 error = (
                     "recursion_limit" if isinstance(exc, GraphRecursionError) else "turn_timeout"
