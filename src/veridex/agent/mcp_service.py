@@ -72,8 +72,13 @@ class MCPAgentService:
             handle_tool_errors=_tool_error,
         )
 
+    @property
+    def is_usable(self) -> bool:
+        """Local lifecycle readiness; does not issue provider or MCP requests."""
+        return not self._closed and self.registry.is_active
+
     def _ensure_open(self):
-        if self._closed or not self.registry.is_active:
+        if not self.is_usable:
             raise MCPClientError("MCP agent service is closed.")
 
     def _lock(self, session_id: str) -> asyncio.Lock:
