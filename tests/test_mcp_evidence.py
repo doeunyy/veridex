@@ -107,6 +107,25 @@ async def test_retrieval_failure_is_tool_error_and_session_recovers(monkeypatch)
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("malformed_metadata", [False, True])
+async def test_failure_payload_is_not_exposed(monkeypatch, caplog, capsys, malformed_metadata):
+    sentinel = "PRIVATE_CREDENTIAL_SENTINEL"
+    document = Document(page_content="text", metadata={**DOCUMENT.metadata, "page": sentinel})
+    retrieve = (
+        Mock(return_value=[(document, 0.42)])
+        if malformed_metadata
+        else Mock(side_effect=RuntimeError(f"Authorization: {sentinel}; /private/host/index"))
+    )
+    monkeypatch.setattr(evidence, "search_documents", retrieve)
+    async with Client(evidence.create_server()) as client:
+        failed = await client.call_tool("search_evidence", {"query": "q"}, raise_on_error=False)
+        assert failed.is_error
+        assert sentinel not in str(failed)
+    captured = capsys.readouterr()
+    assert sentinel not in caplog.text + captured.out + captured.err
+
+
+@pytest.mark.asyncio
 async def test_stdio_production_schema_and_mocked_calls(tmp_path):
     # Patch only the test subprocess; production has no mock retrieval switch.
     launcher = tmp_path / "evidence_fixture.py"
@@ -116,6 +135,7 @@ async def test_stdio_production_schema_and_mocked_calls(tmp_path):
         f"document = Document(page_content={DOCUMENT.page_content!r}, "
         f"metadata={DOCUMENT.metadata!r})\n"
         "def retrieve(query, top_k=5, document_id=None):\n"
+        "    if query == 'failure': raise RuntimeError('PRIVATE_CREDENTIAL_SENTINEL')\n"
         "    if query == 'empty' or document_id == 'unknown': return []\n"
         "    assert top_k == 3 and document_id == 'paper'\n"
         "    return [(document, 0.42)]\n"
@@ -162,7 +182,11 @@ async def test_stdio_production_schema_and_mocked_calls(tmp_path):
                 assert result.structuredContent["passages"] == []
             for args in INVALID:
                 assert (await session.call_tool("search_evidence", args)).isError
+            failed = await session.call_tool("search_evidence", {"query": "failure"})
+            assert failed.isError
+            assert "PRIVATE_CREDENTIAL_SENTINEL" not in str(failed)
             assert not (await session.call_tool("search_evidence", arguments)).isError
+    assert "PRIVATE_CREDENTIAL_SENTINEL" not in (tmp_path / "stderr.log").read_text()
 
 
 @pytest.mark.integration

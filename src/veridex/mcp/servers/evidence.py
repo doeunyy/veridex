@@ -4,6 +4,7 @@ import asyncio
 from typing import Annotated
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, Field
 
 from veridex.rag.retrieval import search_documents
@@ -39,25 +40,36 @@ def create_server() -> FastMCP:
         Unknown document IDs return no passages. Distance is Chroma distance, not confidence.
         """
         if not query.strip():
-            raise ValueError("Search query cannot be empty.")
-        results = await asyncio.to_thread(
-            search_documents, query=query, top_k=top_k, document_id=document_id
-        )
-        return EvidenceResult(
-            query=query,
-            passages=[
-                EvidencePassage(
-                    document_id=document.metadata["document_id"],
-                    chunk_id=document.metadata["chunk_id"],
-                    title=document.metadata["title"],
-                    page=document.metadata["page"],
-                    source_url=document.metadata["source_url"],
-                    content=document.page_content,
-                    distance=distance,
-                )
-                for document, distance in results
-            ],
-        )
+            raise ToolError("Search query cannot be empty.")
+        try:
+            results = await asyncio.to_thread(
+                search_documents, query=query, top_k=top_k, document_id=document_id
+            )
+            return EvidenceResult(
+                query=query,
+                passages=[
+                    EvidencePassage(
+                        document_id=document.metadata["document_id"],
+                        chunk_id=document.metadata["chunk_id"],
+                        title=document.metadata["title"],
+                        page=document.metadata["page"],
+                        source_url=document.metadata["source_url"],
+                        content=document.page_content,
+                        distance=distance,
+                    )
+                    for document, distance in results
+                ],
+            )
+        except Exception as exc:  # noqa: BLE001 — redact retrieval and metadata exception payloads
+            # Preserve the existing actionable configuration error using only a fixed message.
+            if isinstance(exc, ValueError) and str(exc) == "OPENAI_API_KEY is not configured.":
+                raise ToolError(
+                    "Evidence retrieval is unavailable: OPENAI_API_KEY is not configured."
+                ) from None
+            raise ToolError(
+                "Evidence retrieval failed. Check credentials and index availability; "
+                "restart the server if the index was deleted or replaced."
+            ) from None
 
     return server
 
