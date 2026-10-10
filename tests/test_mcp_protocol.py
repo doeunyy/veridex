@@ -39,8 +39,8 @@ async def test_stdio_schema_call_and_diagnostics(tmp_path):
     with diagnostics.open("w", encoding="utf-8") as errlog:
         async with evidence_session(errlog) as session:
             tools = (await session.list_tools()).tools
-            assert [tool.name for tool in tools] == ["protocol_echo"]
-            schema = tools[0].inputSchema
+            assert [tool.name for tool in tools] == ["search_evidence", "protocol_echo"]
+            schema = tools[1].inputSchema
             assert schema["type"] == "object"
             assert schema["required"] == ["text"]
             assert schema["properties"]["text"]["type"] == "string"
@@ -54,7 +54,10 @@ async def test_stdio_schema_call_and_diagnostics(tmp_path):
                 assert len(result.content) == 1
                 assert isinstance(result.content[0], TextContent)
                 assert result.content[0].text == f"echo: {text}"
-            assert [tool.name for tool in (await session.list_tools()).tools] == ["protocol_echo"]
+            assert [tool.name for tool in (await session.list_tools()).tools] == [
+                "search_evidence",
+                "protocol_echo",
+            ]
 
     stderr = diagnostics.read_text(encoding="utf-8")
     assert "Starting MCP server" in stderr
@@ -81,4 +84,4 @@ async def test_stdio_invalid_arguments_return_tool_error(tmp_path, arguments):
 async def test_default_stdio_server_has_no_development_tools(tmp_path):
     with (tmp_path / "stderr.log").open("w", encoding="utf-8") as errlog:
         async with evidence_session(errlog, smoke=False) as session:
-            assert (await session.list_tools()).tools == []
+            assert [tool.name for tool in (await session.list_tools()).tools] == ["search_evidence"]
