@@ -1,15 +1,18 @@
 """FastAPI contract with an injected agent; importing this module starts no MCP servers."""
 
-import asyncio
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from typing import Annotated, Protocol
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from veridex.agent.mcp_service import MCPAgentService
 from veridex.api.lifecycle import agent_lifespan
+from veridex.api.limits import Admission, ChatLimitsMiddleware
 from veridex.api.schemas import ChatRequest, ChatResponse, HealthResponse, ReadyResponse
+from veridex.config import Settings, settings
 
 
 class AsyncAgentService(Protocol):
@@ -41,6 +44,7 @@ def create_app(
     *,
     agent_service: AsyncAgentService | None = None,
     service_factory: Callable[[], AbstractAsyncContextManager[MCPAgentService]] | None = None,
+    config: Settings | None = None,
 ) -> FastAPI:
     """Create an isolated app, optionally with an already initialized service.
 
@@ -58,11 +62,23 @@ def create_app(
     application.state.shutting_down = False
     application.state.lifecycle_started = False
     application.state.chat_tasks = set()
+    config = config or settings
+    application.state.admission = Admission(config)
+    application.add_middleware(ChatLimitsMiddleware, state=application.state, config=config)
+
+    @application.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, exc: RequestValidationError):
+        # Default validation errors echo rejected inputs, including arbitrary secrets.
+        return JSONResponse(status_code=422, content={"detail": "Invalid request."})
 
     @application.post(
         "/chat",
         response_model=ChatResponse,
         responses={
+            400: {"description": "Invalid request headers"},
+            413: {"description": "Request body too large"},
+            429: {"description": "Request capacity exhausted"},
+            504: {"description": "Request deadline or queue wait expired"},
             503: {"description": "Agent service unavailable"},
             500: {"description": "Agent request failed"},
         },
@@ -73,8 +89,6 @@ def create_app(
     ) -> ChatResponse:
         if application.state.shutting_down:
             raise HTTPException(status_code=503, detail="Agent service is unavailable.")
-        task = asyncio.current_task()
-        application.state.chat_tasks.add(task)
         try:
             response = await service.achat(query=body.query, session_id=body.session_id)
             return ChatResponse(response=response)
@@ -83,8 +97,6 @@ def create_app(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Agent request failed.",
             ) from None
-        finally:
-            application.state.chat_tasks.discard(task)
 
     @application.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
