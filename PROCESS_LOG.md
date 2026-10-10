@@ -62,7 +62,24 @@
 
 ### Phase 03 — MCP Integration
 
-_To be completed._
+**Implementation**
+
+- Implemented three independent MCP servers exposing `search_evidence`, `search_web`, `list_documents`, and `read_document`; reused the existing RAG pipeline and restricted Workspace access to manifest-approved PDFs.
+- Added dynamic tool discovery, a persistent multi-server registry, structured results, and session-bound LangChain adapters.
+- Integrated the real MCP tools into the existing LangGraph architecture through an asynchronous AgentService and dedicated CLI, with LLM-driven routing, cross-server chaining, session memory/isolation, and source-preserving traces.
+- Added interruption recovery using error ToolMessages, subprocess lifecycle checks, and sanitized Evidence error handling without fabricating successful tool execution.
+
+**Verification**
+
+- Passed 225 ordinary tests, including real STDIO protocol, multi-server Agent, filesystem security, cancellation/recovery, and Phase 01–02 regression coverage; nine opt-in integrations were deselected in the final run.
+- Selected live integrations verified indexed retrieval, Tavily search, Evidence/Web orchestration, Workspace listing/reading, multi-turn memory, and session isolation; exact tool sequences in automated protocol tests use scripted models.
+- Passed Ruff lint/format and Git whitespace checks. The security audit found no configured-credential or common credential-pattern matches in 95 reachable Git blobs and confirmed exclusions for secrets, PDFs, indexes, and private notes.
+
+**Limitations**
+
+- Memory and locks remain process-local; session/history growth and search-text sizes lack deployment-level budgets. Cancelled synchronous PDF/retrieval workers can continue, and failed MCP children are not automatically restarted.
+- Prompt grounding and source metadata do not establish claim-level factual support or guarantee prompt-injection resistance.
+- Cloud Run deployment remains Phase 04 work: ingress/lifecycle handling, durable checkpoints, corpus/index provisioning, authentication, resource limits, and shutdown within the platform grace period are still required.
 
 ### Phase 04 — Cloud Deployment & QA
 
