@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     port: int = 8080
 
     documents_dir: Path = Path("./data/papers")
+    workspace_manifest_path: Path = Path("./data/samples/manifest.json")
     chroma_persist_dir: Path = Path("./data/index")
     chroma_collection: str = "veridex_documents"
 
