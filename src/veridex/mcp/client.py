@@ -123,6 +123,10 @@ class ToolRegistry:
         self.entries: dict[str, DiscoveredTool] = {}
 
     @property
+    def is_active(self) -> bool:
+        return self._active
+
+    @property
     def tools(self) -> list[BaseTool]:
         return [entry.langchain_tool for entry in self.entries.values()]
 
