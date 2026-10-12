@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import sys
 
 import pytest
@@ -107,6 +108,8 @@ async def test_mcp_cli_missing_credentials_is_safe(tmp_path):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_live_llm_evidence_and_multiserver(tmp_path):
+    if os.environ.get("VERIDEX_RUN_LIVE_PROVIDERS") != "1":
+        pytest.skip("Live providers require explicit VERIDEX_RUN_LIVE_PROVIDERS=1 opt-in.")
     from veridex.config import settings
 
     if not settings.openai_api_key:

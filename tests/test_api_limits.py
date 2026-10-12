@@ -163,7 +163,9 @@ async def test_queue_wait_timeout_does_not_invoke_service():
     service = AsyncMock(achat=AsyncMock(side_effect=answer))
     application = create_app(
         agent_service=service,
-        config=config(api_max_active_requests=1, api_queue_timeout_seconds=0.03),
+        config=config(
+            api_max_active_requests=1, api_max_waiting_requests=1, api_queue_timeout_seconds=0.03
+        ),
     )
     async with client_for(application) as client:
         first = asyncio.create_task(client.post("/chat", json=BODY))
@@ -196,7 +198,9 @@ async def test_total_deadline_includes_queue_and_execution():
 
     application = create_app(
         agent_service=AsyncMock(achat=answer),
-        config=config(api_max_active_requests=1, api_request_timeout_seconds=0.12),
+        config=config(
+            api_max_active_requests=1, api_max_waiting_requests=1, api_request_timeout_seconds=0.12
+        ),
     )
     async with client_for(application) as client:
         first = asyncio.create_task(client.post("/chat", json=BODY))

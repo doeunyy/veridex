@@ -16,6 +16,7 @@ from test_mcp_multi_server import connections as connections  # noqa: PLC0414 â€
 from veridex.agent.mcp_service import open_mcp_agent_service
 from veridex.api import lifecycle
 from veridex.api.app import create_app
+from veridex.config import Settings
 from veridex.mcp.client import MCPClientError
 
 pytestmark = pytest.mark.asyncio
@@ -186,7 +187,10 @@ async def test_http_concurrency_and_same_session_serialization(connections):
         return AIMessage(content=query)
 
     model.ainvoke = answer
-    application = build_app(configs, model)
+    application = create_app(
+        service_factory=lambda: open_mcp_agent_service(configs, model=model, request_timeout=15),
+        config=Settings(_env_file=None, api_max_active_requests=4, api_max_waiting_requests=8),
+    )
     owner = Lifespan(application)
     await owner.start()
     try:
