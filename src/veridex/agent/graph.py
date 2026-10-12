@@ -18,6 +18,8 @@ def build_agent_graph(
     async_mode=False,
     system_prompt=AGENT_SYSTEM_PROMPT,
     handle_tool_errors=True,
+    before_model=None,
+    before_tools=None,
 ):
     """Build a stateful LangGraph tool-calling agent."""
     if tools is None:
@@ -39,6 +41,8 @@ def build_agent_graph(
 
         async def agent_node(state: AgentState):
             messages = [SystemMessage(content=system_prompt), *state["messages"]]
+            if before_model is not None:
+                before_model(messages)
             return {"messages": [await bound_model.ainvoke(messages)]}
     else:
 
@@ -49,10 +53,16 @@ def build_agent_graph(
     builder = StateGraph(AgentState)
 
     builder.add_node("agent", agent_node)
-    builder.add_node(
-        "tools",
-        ToolNode(tools, handle_tool_errors=handle_tool_errors),
-    )
+    tool_node = ToolNode(tools, handle_tool_errors=handle_tool_errors)
+    if async_mode and before_tools is not None:
+
+        async def bounded_tools(state, config):
+            before_tools(state["messages"])
+            return await tool_node.ainvoke(state, config)
+
+        builder.add_node("tools", bounded_tools)
+    else:
+        builder.add_node("tools", tool_node)
 
     builder.add_edge(START, "agent")
 

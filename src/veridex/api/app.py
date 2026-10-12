@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from veridex.agent.budgets import SessionCapacityError
 from veridex.agent.mcp_service import MCPAgentService
 from veridex.api.lifecycle import agent_lifespan
 from veridex.api.limits import Admission, ChatLimitsMiddleware
@@ -92,6 +93,8 @@ def create_app(
         try:
             response = await service.achat(query=body.query, session_id=body.session_id)
             return ChatResponse(response=response)
+        except SessionCapacityError:
+            raise HTTPException(status_code=429, detail="Session capacity exhausted.") from None
         except Exception:  # noqa: BLE001 — never expose provider or internal exception details
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

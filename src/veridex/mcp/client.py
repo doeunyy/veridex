@@ -51,6 +51,8 @@ def default_connections(
             "OPENAI_EMBEDDING_MODEL": config.openai_embedding_model,
             "CHROMA_PERSIST_DIR": path(config.chroma_persist_dir),
             "CHROMA_COLLECTION": config.chroma_collection,
+            "PROVIDER_TIMEOUT_SECONDS": str(config.provider_timeout_seconds),
+            "PROVIDER_MAX_RETRIES": str(config.provider_max_retries),
         },
         "web_search": {"TAVILY_API_KEY": config.tavily_api_key or ""},
         "workspace": {
