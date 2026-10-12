@@ -75,12 +75,16 @@ class ChatLimitsMiddleware:
         self.state.chat_tasks.add(task)
         deadline = asyncio.timeout(self.config.api_request_timeout_seconds)
         started = False
+        finished = False
+        watcher = None
 
         async def tracked_send(message):
-            nonlocal started
+            nonlocal started, finished
             if message["type"] == "http.response.start":
                 started = True
             await send(message)
+            if message["type"] == "http.response.body" and not message.get("more_body", False):
+                finished = True
 
         try:
             async with deadline:
@@ -107,13 +111,28 @@ class ChatLimitsMiddleware:
                         if not message.get("more_body", False):
                             break
                     delivered = False
+                    disconnected = asyncio.Event()
+
+                    async def watch_disconnect():
+                        message = await receive()
+                        if message["type"] == "http.disconnect":
+                            disconnected.set()
+                            # Do not interrupt an existing deadline/shutdown history repair.
+                            if not finished and not task.cancelling():
+                                task.cancel()
+
+                    watcher = asyncio.create_task(
+                        watch_disconnect(), name="veridex-http-disconnect"
+                    )
 
                     async def replay():
                         nonlocal delivered
                         if not delivered:
                             delivered = True
                             return {"type": "http.request", "body": bytes(body), "more_body": False}
-                        return await receive()
+                        # The watcher owns transport receive after the complete body.
+                        await disconnected.wait()
+                        return {"type": "http.disconnect"}
 
                     await self.app(scope, replay, tracked_send)
         except RequestRejected as exc:
@@ -129,7 +148,12 @@ class ChatLimitsMiddleware:
                 scope, receive, send
             )
         finally:
-            self.state.chat_tasks.discard(task)
+            try:
+                if watcher is not None:
+                    watcher.cancel()
+                    await asyncio.gather(watcher, return_exceptions=True)
+            finally:
+                self.state.chat_tasks.discard(task)
 
     def check_available(self):
         if self.state.shutting_down:

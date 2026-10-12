@@ -324,3 +324,50 @@ async def test_http_deadline_repairs_real_mcp_tool_history(observed_connections)
 async def test_invalid_limits_rejected(name, value):
     with pytest.raises(ValidationError):
         config(**{name: value})
+
+
+async def test_disconnect_after_complete_body_cancels_turn_and_releases_capacity():
+    entered, cancelled = asyncio.Event(), asyncio.Event()
+    messages = asyncio.Queue()
+    await messages.put(
+        {"type": "http.request", "body": json.dumps(BODY).encode(), "more_body": False}
+    )
+
+    async def answer(**kwargs):
+        entered.set()
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    service = AsyncMock(achat=answer)
+    application = create_app(agent_service=service)
+    sent = []
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/chat",
+        "raw_path": b"/chat",
+        "query_string": b"",
+        "headers": [(b"content-type", b"application/json")],
+        "scheme": "http",
+        "http_version": "1.1",
+        "server": ("test", 80),
+        "client": ("test", 1234),
+        "root_path": "",
+    }
+    task = asyncio.create_task(application(scope, messages.get, send))
+    await asyncio.wait_for(entered.wait(), 2)
+    await messages.put({"type": "http.disconnect"})
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, 2)
+    assert cancelled.is_set()
+    assert not sent
+    assert application.state.admission.active == 0
+    assert application.state.chat_tasks == set()
+    assert not [t for t in asyncio.all_tasks() if t.get_name() == "veridex-http-disconnect"]
