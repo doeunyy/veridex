@@ -37,7 +37,8 @@ in its existing request task, allowing interrupted tool history to be repaired.
 Cancellation-resistant work can delay that repair; synchronous worker threads are
 not directly interruptible. The existing eight-second lifespan shutdown deadline
 remains authoritative during termination. These limits exclude upstream platform
-queueing and do not implement disconnect monitoring once the body has been read.
+queueing. Step 4.6 added disconnect monitoring after complete body reads and
+admission; a queued disconnect can remain pending until bounded admission wait ends.
 
 Errors return fixed messages and never echo rejected request values or provider
 exceptions. Successful chat responses intentionally contain the agent's answer,
@@ -45,5 +46,8 @@ which may cite or quote corpus evidence; the application does not promise to
 remove sensitive material that a model places in a successful answer.
 
 Deployment references:
+- [Final deployment approval checklist](deployment_approval_checklist.md): grading
+  authentication remains unverified; no public access or session-ownership change
+  is authorized by the planning review.
 - https://docs.cloud.google.com/run/docs/authenticating/service-to-service
 - https://docs.cloud.google.com/run/docs/authenticating/end-users
