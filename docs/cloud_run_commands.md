@@ -7,6 +7,9 @@ these commands. Use an approved current Google Cloud CLI; it is not installed he
 Flag spellings were checked against the current
 [gcloud run deploy reference](https://docs.cloud.google.com/sdk/gcloud/reference/run/deploy).
 No cloud-side syntax/policy validation has been executed.
+The [Step 4.7b approval checklist](deployment_approval_checklist.md) records unresolved
+grading, session ownership, rights, model and spending gates. Do not execute these
+blocks until the relevant decisions and named actions are explicitly approved.
 
 ## 1. Approved identifiers (no secrets)
 
@@ -98,6 +101,9 @@ If inspect differs, stop and establish the reviewed image; don't silently push i
 The bundle digest remains
 `6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8`.
 The approved original/recovered indexes and local bundle remain untouched.
+Reusing this image is conditional on completed rights/notices review. If that
+review requires new attribution files or corpus changes, stop: authorize and verify
+a new local image separately, then replace this identity pin through review.
 
 ## 4. Bootstrap/access administrator: authorized PRIVATE deployment
 
@@ -132,6 +138,7 @@ Retire unnecessary bootstrap grants after successful creation/policy audit.
 ```bash
 gcloud run services describe "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format=yaml
 gcloud run services get-iam-policy "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format=json
+gcloud projects get-iam-policy "$VERIDEX_PROJECT_ID" --format=json
 gcloud secrets versions list veridex-openai-api-key --project="$VERIDEX_PROJECT_ID"
 gcloud secrets versions list veridex-tavily-api-key --project="$VERIDEX_PROJECT_ID"
 gcloud secrets get-iam-policy veridex-openai-api-key --project="$VERIDEX_PROJECT_ID"
@@ -140,7 +147,10 @@ gcloud secrets get-iam-policy veridex-tavily-api-key --project="$VERIDEX_PROJECT
 
 Verify pinned image/secrets, IAM check enabled, no public grant, runtime SA, resource
 allocation, probe, scaling and API limits. Inspect metadata only; do not access
-secret payloads. A trusted invoker grant is a separate approved access mutation:
+secret payloads. Audit inherited project/ancestor IAM and any group membership too;
+absence of a service-level public binding alone is insufficient. When reusing an
+existing service, check for literal secret env values before printing a full service
+description. A trusted invoker grant is a separate approved access mutation:
 
 ```bash
 gcloud run services add-iam-policy-binding "$VERIDEX_SERVICE" --member="$VERIDEX_INVOKER_MEMBER" --role=roles/run.invoker --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID"

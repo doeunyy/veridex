@@ -4,6 +4,8 @@ Planning review: 2026-10-12. No cloud resources, IAM, billing, images, or remote
 artifacts were changed. Step 4.8 is **not authorized**. Proposed commands are in
 [cloud_run_commands.md](cloud_run_commands.md); they are review material, not an
 executable provisioning script.
+See [Step 4.7b final approval checklist](deployment_approval_checklist.md) for the
+subsequent configuration-history investigation and conditional access/corpus paths.
 
 ## Proposed initial configuration
 

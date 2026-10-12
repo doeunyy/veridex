@@ -25,6 +25,12 @@ attribution package. Before remote publication, finish the rights review and pre
 required notices/attribution for the chosen use. A private registry is still a remote
 publication and has not been approved. No authorization is inferred from this step.
 
-Embedding-model identity and Linux/amd64 native compatibility are separate pending
-checks. `unverified-legacy-model` is an explicit uncertainty marker, never a claim
-that the old vectors were produced by the current configured model.
+Embedding-model identity remains unresolved. Linux/amd64 container compatibility
+was subsequently verified in Step 4.5/4.6 under local emulation; native Cloud Run
+performance remains unmeasured. `unverified-legacy-model` is an explicit uncertainty
+marker, never a claim that old vectors came from the current configured model.
+
+[Step 4.7b](deployment_approval_checklist.md) distinguishes CC license conditions
+from missing permission. Compliant reuse of covered CC-licensed material does not
+automatically require a separate rights-holder grant. RAG's downstream permission
+remains unestablished; conditional corpus replacement is proposed, not performed.
