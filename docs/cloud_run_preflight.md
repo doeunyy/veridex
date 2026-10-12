@@ -11,7 +11,7 @@ subsequent configuration-history investigation and conditional access/corpus pat
 
 | Setting | Proposal |
 | --- | --- |
-| Region | `us-central1` (Iowa): Tier 1 pricing baseline, no known residency requirement; keep registry and service together. `us-west1` is an alternative if Western US latency measurements justify it. Confirm project/location policy before provisioning. |
+| Region | `us-west1` (Oregon): matches the handout recommendation and Western US course context. Both it and `us-central1` use Tier 1 pricing; keep registry/service together. Confirm project/location policy before provisioning. |
 | Service | `veridex`, one ingress container, second-generation execution environment |
 | Worker/processes | Existing runner: one Uvicorn worker, three persistent STDIO MCP children, four discovered tools |
 | Resources | 1 vCPU / 2 GiB, subject to native measurements; startup CPU boost enabled |
@@ -20,7 +20,7 @@ subsequent configuration-history investigation and conditional access/corpus pat
 | Deadline | Cloud Run 240 seconds; existing ASGI deadline 180 seconds, Agent turn 120 seconds, provider/MCP request 45 seconds |
 | Startup probe | HTTP/1 GET `/ready`, port 8080, initial delay 0, period 10 seconds, timeout 3 seconds, failure threshold 24 |
 | Liveness | Initially omit a restart-triggering liveness probe; `/health` remains available for authenticated diagnostics. Add only after measuring event-loop responsiveness under load. |
-| Access | Internet-reachable HTTPS URL, IAM invocation required, no `allUsers`/`allAuthenticatedUsers` grants, invoker IAM check enabled |
+| Access | Grading target: internet-reachable unauthenticated invocation, pending explicit approval of public admission and anonymous-session limitations. Stage IAM-private first; public grant is a separate gate. |
 | CPU/billing | Request-based (`--cpu-throttling`); no required work scheduled while idle |
 | Secrets | Two Secret Manager environment references pinned to numeric versions; never build arguments |
 | Storage | Immutable canonical bundle, private writable `/tmp` Chroma copy; no ingestion or provider calls during artifact validation |
@@ -53,7 +53,7 @@ Cloud Run's [container contract](https://docs.cloud.google.com/run/docs/containe
 requires Linux x86_64 support, startup within four minutes, and provides a
 10-second SIGTERM period. Its writable filesystem is memory-backed and ephemeral.
 Platform pending queues are outside the application deadline. Maximum-instance
-settings can be temporarily exceeded; they do not ensure a single permanent process.
+settings can be temporarily exceeded; they do not ensure a single permanent process. The per-instance saver is not durable or user-owned.
 
 Startup validates bundle hashes, dependencies, PDFs, collection and SQLite/FTS
 structure, prepares private Chroma storage, then initializes MCP in the same
@@ -85,8 +85,8 @@ Do not assume setting an undocumented environment flag disables child networking
 
 No fatal container-contract incompatibility was identified. Operational risks:
 45-second MCP initialization timeouts on a small CPU allocation, image/import
-weight, memory-backed writes, unbounded session history/locks, provider latency,
-and interrupted synchronous work. No runtime code was changed in this step.
+weight, memory-backed writes, bounded-but-retained sessions, provider latency,
+and interrupted synchronous work. Step 4.7c added local Agent/provider/retention controls; cloud configuration remains unexecuted.
 
 ## Infrastructure and identities
 
@@ -134,7 +134,7 @@ operator review; successful readiness cannot replace live-provider validation.
 
 ## Costs and safeguards
 
-USD list-price illustration, us-central1, request-based 1 vCPU / 2 GiB, no discounts,
+USD list-price illustration, Tier 1 us-west1/us-central1, request-based 1 vCPU / 2 GiB, no discounts,
 excluding startup boost, startup/shutdown duration, networking, logs, storage,
 providers, retries, and tax. Active rate: $0.000024/vCPU-second plus
 $0.0000025/GiB-second = $0.000029/second; $0.40/million requests.
@@ -184,41 +184,52 @@ can overshoot due to reporting latency, and allow in-flight work to finish. They
 exclude external providers and other service costs; they are not a hard total-dollar
 ceiling. A cap can interrupt grading and resets monthly; approval is required.
 
-## Access, grading, and session ownership decisions
+## Assignment-aligned public demo and implemented limits
 
-No assignment handout or README was found in the repository/parent project tree.
-The public URL and exact POST schema are confirmed by the user's assignment
-requirements; whether the grader accepts authentication headers is unverified.
-A reachable HTTPS URL with IAM authentication may satisfy the URL requirement,
-but must not be presented as verified grading compatibility.
+The handout findings supplied in Step 4.7c establish a live Cloud Run URL, exact
+POST schema, arbitrary reasonable queries, real MCP discovery/invocation, and
+at least two turns sharing a session ID. Recycling durability is not required.
+The instructor example uses `--allow-unauthenticated`; it is an example rather
+than an authentication prohibition. Recommend public grading admission with no
+mandatory extra headers/fields, pending explicit deployment approval. Three
+submission diagrams, README finalization and PROCESS_LOG narrative remain Step 4.11.
+The raw handout is not stored in this repo; this review uses the supplied findings.
 
-Recommended initial access: one explicitly trusted IAM invoker and ephemeral
-sessions, with the grading principal approved separately if compatible. If multiple
-independent users are admitted, implement verified identity-scoped internal thread
-IDs before use: verified issuer/subject + caller-provided session ID. Preserve the
-JSON contract and never silently replace the supplied ID. IAM admission alone
-does not isolate existing conversation namespaces; a shared service-account token
-does not distinguish end users. Do not trust arbitrary identity headers or decoded
-JWTs without verification. [Cloud Run token forwarding](https://docs.cloud.google.com/run/docs/authenticating/service-to-service)
-can strip the `X-Serverless-Authorization` signature; choose a separately verifiable
-end-user identity or trusted gateway protocol before implementation.
+Initial staging remains IAM-private. Public admission is a separate prepared
+function, not part of setup/deploy blocks. Anonymous IDs are conversation selectors,
+not verified ownership: two callers using the same ID share history. No cross-user
+confidentiality is claimed. Do not submit private data or credentials to this demo.
+Random IDs reduce collisions but are not an authorization policy. No mandatory
+header, server-issued token or new JSON field was introduced.
 
-If the grader cannot authenticate, a temporary publicly reachable demo requires
-explicit approval and additional implementation: grader-compatible header/gateway
-authentication where possible, verified session ownership, bounded retention,
-per-caller/global rate and provider-call/token budgets, a removal date and emergency
-access revocation procedure. An entirely anonymous endpoint has no verified user
-identity; random session IDs are not authorization. Do not approve anonymous
-shared memory as safe by adding random IDs alone. Public Cloud Run IAM admission
-would be a separate explicit change, absent from prepared commands. Standard Cloud
-Run concurrency and current 429 handling are not per-user or time-based rate limits.
+Implemented Step 4.7c settings: active 1/waiting 0; eight tool calls and six model
+calls per turn; 64,000 serialized message characters before each model call;
+4,096 provider completion tokens per generation request; provider timeout 30s,
+OpenAI retries 0. Tavily retains its existing 20s outer deadline and one SDK POST
+without an application retry loop. MCP 45s / Agent 120s / HTTP 180s and shutdown
+8s remain. All three MCP servers/tools and LangGraph selection remain real.
 
-InMemorySaver and session-lock dictionaries have no eviction; restarts, scale-to-zero,
-revision replacement and temporary extra instances lose/split history. Maximum 1
-is no durability or isolation guarantee. State is disposable for the initial
-trusted demo. Future durable checkpoints need a supported database backend,
-identity ownership, retention, and cross-instance turn coordination; adding durable
-storage alone does not provide these protections.
+At most 128 sessions are retained. Admission lazily deletes only idle sessions
+unused for 30 minutes, including their checkpoints and lock records; waiting and
+active turns reserve their sessions. Full capacity returns safe HTTP 429 without
+LRU eviction. Retain the six most recent complete human turns, compacting the
+existing default InMemorySaver to one latest checkpoint through public saver APIs
+under the same-session lock. Active-turn intermediate checkpoints/repair remain
+intact until turn exit. The default saver and locks are cleared after shutdown
+drain. Custom checkpoint backends require their own retention/transaction policy;
+compaction intentionally applies only to the exact default InMemorySaver type.
+
+Two successive normal turns preserve memory, distinct non-colliding IDs remain
+separate, and active sessions cannot expire. History beyond six turns or idle TTL
+can be forgotten. Input character bounds are conservative, not exact tokenizer
+counts; tool schemas/provider overhead and embedding input splitting add cost.
+An eight-call tool ceiling is not eight HTTP requests: each accepted tool can make
+SDK requests, and retries can be explicitly reconfigured. Six generation calls
+request at most 24,576 completion tokens by default, not an exact dollar charge.
+No durable rate counter or aggregate spend ceiling is implemented. Restarted or
+additional instances reset limits, and sustained traffic still spends money.
+Keep provider/account controls, budget notifications, approved expiry and an
+emergency operator revocation plan; do not describe maximum 1 or alerts as a cap.
 
 ## Corpus and embedding publication gates
 
@@ -268,11 +279,12 @@ but must not claim reproducibility or semantic retrieval validation.
    prepare approved notices. Approve remote copies and intended service output.
 3. Establish embedding provenance or explicitly decide whether exploratory use of
    unverified vectors is acceptable; approve any replacement/re-embedding separately.
-4. Confirm grading authentication capability. Approve caller/session ownership and
-   retention; implement/test any selected multi-user or public controls first.
+4. Approve public grading admission, anonymous shared-ID privacy limitations,
+   retention defaults, provider allowance and expiry; no mandatory grading auth added.
 5. Separately authorize the resource/IAM/billing provisioning commands, secret
    operator workflow, and budget setup. This document authorizes none of them.
-6. Recheck approved local image identity/artifact digest and source exclusions;
+6. Rebuild/reverify the locally changed application image and any approved notices;
+   recheck approved image identity/artifact digest and source exclusions;
    separately authorize one upload to the approved private repository. Capture the
    registry digest, then deploy that immutable digest with approved configuration.
 7. Audit private IAM policy, effective scaling/CPU/secrets/probe configuration and
@@ -286,17 +298,17 @@ but must not claim reproducibility or semantic retrieval validation.
 9. Obtain separate approval for one bounded live Evidence+Web turn: at most two
    generation requests, one query embedding and one Tavily search; retries zero,
    top_k/max_results 1. Implement a counted fail-closed harness before calls; the
-   current production retry configuration does not enforce this plan. Inspect
+   zero retries alone do not enforce this stricter counted live-test plan. Inspect
    private sanitized tool names/status/IDs without logging source text or tokens.
 10. Approve grading access only after native checks and provider validation; record
     revocation/rollback procedure. Do not make an unvalidated revision public.
 
 Preflight planning is complete with explicit open decisions. Native performance,
-live-provider compatibility, actual project policies/quotas, grading authentication,
+live-provider compatibility, actual project policies/quotas, public-admission approval,
 rights approval, and embedding provenance are not verified. Step 4.8 needs explicit
 authorization and resolution/acceptance of the relevant gates before any mutation.
 
-## Local verification performed for this planning step
+## Historical Step 4.7 verification (before Step 4.7c)
 
 - Inspected Dockerfile, entrypoint/runtime, Settings, runner, API/lifecycle/limits,
   MCP connection configuration, ignore rules and existing deployment/security/rights
@@ -313,3 +325,14 @@ authorization and resolution/acceptance of the relevant gates before any mutatio
   Docker TCP tests passed; these are prior results, not new deployment evidence.
 - No image build/push/run, cloud commands, credentials access, or paid provider
   calls. Only the two new planning documents were added; no staging/commit/push.
+
+## Step 4.7c verification supersedes the historical results above
+
+Current ordinary suite: 400 passed / 38 deselected; deterministic real-STDIO/budget
+selection: 18 passed / 1 deselected; Ruff checks and Git whitespace passed. Bundle
+validation and all 29 protected fingerprints remain unchanged. See the
+[approval checklist](deployment_approval_checklist.md) for exact commands and the
+reported accidental live-test connection attempt, which failed at DNS and was not
+retried. That test is now explicitly opt-in; no successful provider validation or
+cloud operation occurred. This step changed application code and therefore needs
+new local Docker verification before any approved image publication.

@@ -1,0 +1,153 @@
+{
+  "format_version": 1,
+  "review_date": "2026-10-12",
+  "intended_use": "Noncommercial coursework grading demo; user acceptance pending",
+  "remote_publication_authorized": false,
+  "notes": [
+    "Attribution inventory, not a rights grant or complete bundled license package.",
+    "Preserve original notices and make attribution/license information available to service recipients.",
+    "CC BY source links do not certify byte identity of locally modified files."
+  ],
+  "documents": [
+    {
+      "id": "rag_2020",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "domain": "nlp",
+      "year": 2020,
+      "filename": "rag_2020.pdf",
+      "source_url": "https://arxiv.org/abs/2005.11401",
+      "sha256": "46ec3f96c1ef4b931ab449ddf538ead6a2508766e559730c864a88048755d735",
+      "authors": [
+        "Patrick Lewis",
+        "Ethan Perez",
+        "Aleksandra Piktus",
+        "Fabio Petroni",
+        "Vladimir Karpukhin",
+        "Naman Goyal",
+        "Heinrich Küttler",
+        "Mike Lewis",
+        "Wen-tau Yih",
+        "Tim Rocktäschel",
+        "Sebastian Riedel",
+        "Douwe Kiela"
+      ],
+      "license_id": "UNVERIFIED",
+      "license_url": null,
+      "evidence": "arXiv v4 nonexclusive distribution grant; not a downstream reuse license",
+      "status": "permission_unverified",
+      "copyright_notice": "No explicit copyright notice located; preserve any supplied source notices",
+      "modifications": [
+        "PDF text extraction and chunking",
+        "rag_2020_p3_c00012: U+0000/U+0001 replaced with parentheses; length unchanged"
+      ]
+    },
+    {
+      "id": "react_2022",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "domain": "agentic_ai",
+      "year": 2022,
+      "filename": "react_2022.pdf",
+      "source_url": "https://arxiv.org/abs/2210.03629",
+      "sha256": "f285b0971ae4a790e402fb93966bed3adde2cf0a04977d08b2b40d6ab0cace69",
+      "authors": [
+        "Shunyu Yao",
+        "Jeffrey Zhao",
+        "Dian Yu",
+        "Nan Du",
+        "Izhak Shafran",
+        "Karthik Narasimhan",
+        "Yuan Cao"
+      ],
+      "license_id": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "evidence": "arXiv v3 CC BY link; exact-file applicability pending",
+      "status": "conditional_retention",
+      "copyright_notice": "No explicit copyright notice located; preserve any supplied source notices",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ]
+    },
+    {
+      "id": "self_rag_2023",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "domain": "rag",
+      "year": 2023,
+      "filename": "self_rag_2023.pdf",
+      "source_url": "https://arxiv.org/abs/2310.11511",
+      "sha256": "d9eaa1398abac0df67a9d0933a5bf8b6d9d83d2e72da2a486073cd842dd52978",
+      "authors": [
+        "Akari Asai",
+        "Zeqiu Wu",
+        "Yizhong Wang",
+        "Avirup Sil",
+        "Hannaneh Hajishirzi"
+      ],
+      "license_id": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "evidence": "arXiv v1 CC BY link; exact-file applicability pending",
+      "status": "conditional_retention",
+      "copyright_notice": "No explicit copyright notice located; preserve any supplied source notices",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ]
+    },
+    {
+      "id": "netmhcpan_2020",
+      "title": "NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen presentation by concurrent motif deconvolution and integration of MS MHC eluted ligand data",
+      "domain": "bioinformatics",
+      "year": 2020,
+      "filename": "netmhcpan_2020.pdf",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7319546/",
+      "sha256": "ac5722a2e7452f3dac4b09c921a1b9c3988b9d8c6f3170522dd2b417466dfca0",
+      "authors": [
+        "Birkir Reynisson",
+        "Bruno Alvarez",
+        "Sinu Paul",
+        "Bjoern Peters",
+        "Morten Nielsen"
+      ],
+      "license_id": "CC-BY-NC-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "evidence": "local PDF page 1 and PMC article CC BY-NC notice",
+      "status": "conditional_retention",
+      "copyright_notice": "© The Author(s) 2020. Published by Oxford University Press on behalf of Nucleic Acids Research.",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ]
+    },
+    {
+      "id": "mixmhc2pred_2023",
+      "title": "Machine learning predictions of MHC-II specificities reveal alternative binding mode of class II epitopes",
+      "domain": "bioinformatics",
+      "year": 2023,
+      "filename": "mixmhc2pred_2023.pdf",
+      "source_url": "https://www.sciencedirect.com/science/article/pii/S1074761323001292",
+      "sha256": "57d6a34a71fa16a6fc33676f44ba2102b8e788c7a205844fc9f9584ce5ea1b90",
+      "authors": [
+        "Julien Racle",
+        "Philippe Guillaume",
+        "Julien Schmidt",
+        "Justine Michaux",
+        "Amédée Larabi",
+        "Kelvin Lau",
+        "Marta A. S. Perez",
+        "Giancarlo Croce",
+        "Raphaël Genolet",
+        "George Coukos",
+        "Vincent Zoete",
+        "Florence Pojer",
+        "Michal Bassani-Sternberg",
+        "Alexandre Harari",
+        "David Gfeller"
+      ],
+      "license_id": "CC-BY-NC-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "evidence": "local PDF page 2 CC BY-NC notice; pages 19-31 article STAR+METHODS through e13",
+      "status": "conditional_retention",
+      "copyright_notice": "© 2023 The Authors. Published by Elsevier Inc.",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ]
+    }
+  ]
+}

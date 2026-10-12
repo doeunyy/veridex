@@ -1,213 +1,179 @@
-# Step 4.7b — blocker resolution and final approval gate
+# Step 4.7c — public grading approval gate
 
-Reviewed 2026-10-12. Planning only: Step 4.8 remains unauthorized. This supplements
-[preflight](cloud_run_preflight.md) and the [unexecuted commands](cloud_run_commands.md).
-No original, recovered, or bundled artifact is replaced by these recommendations.
+No cloud mutation, publication, paid provider request or artifact replacement is
+approved by this review. Commands remain PREPARED, NOT EXECUTED.
 
-## Assignment and smallest viable access design
+## Assignment-aligned decision
 
-No CSCI 599 Assignment 1 handout/README was found in the repository, its parent
-project tree, or tracked filename history. The exact `/chat` JSON and public URL
-requirements are supplied by the user. **Whether grading requires requests without
-authentication is unverified.** A URL being reachable is not proof that IAM-protected
-requests satisfy grading. Obtain the handout or instructor confirmation of accepted
-headers, cookies, Google identities, session behavior and any required paper corpus.
+The user supplied findings from the reviewed actual handout: live Cloud Run URL,
+exact POST `/chat` JSON, arbitrary reasonable queries, real MCP discovery/invocation,
+and at least two turns sharing a session ID. Instance-recycling persistence is not
+required. The instructor example permits unauthenticated access and recommends
+us-west1/scale-to-zero/max one. Authentication is not expressly forbidden, but the
+recommended grading target is anonymous invocation without extra headers/fields.
+These findings supersede Step 4.7b's missing-handout assumptions. The raw handout
+has not been added locally; no claim is made that this agent independently read it.
 
-| Grader capability | Smallest proposed design | Security/compatibility gate |
+Recommend us-west1, colocated registry/service, concurrency 1, active 1/waiting 0,
+min 0/max 1, one worker, 1 CPU/2 GiB and startup boost, subject to native measurement.
+Both us-west1 and us-central1 have Tier 1 Cloud Run pricing; the course recommendation
+and Western US location favor us-west1. No region or cloud configuration changed.
+
+Stage IAM-private. A separate access-administrator function grants allUsers only
+following explicit public-grading approval. Setup and initial deployment never make
+that grant. No mandatory token/header/cookie is implemented or planned for this
+selected anonymous demo. An approved expiry/operator must revoke public admission
+and check inherited access after grading; deletion/secret rotation are separate gates.
+
+Anonymous shared session IDs cannot establish ownership. Distinct normal IDs are
+separate, but deliberate collisions share/contaminate history. No full cross-user
+confidentiality is claimed. Use no confidential input. Verified ownership requires
+an authenticated protocol in a future deployment, not a hidden grading constraint.
+
+## Implemented local protections
+
+See [api_security.md](api_security.md) for exact defaults and safe status mapping.
+In addition to body/field/admission/deadline/recursion/shutdown controls:
+
+- Eight tool calls/six model calls per turn; over-budget rounds are rejected before
+  invocation and interrupted calls repaired. Real MCP tool selection is unchanged.
+- Provider completion cap 4096 per generation request, timeout 30s and retries 0;
+  embeddings share explicit timeout/retry settings. Existing Tavily 20s/single POST.
+- Model input capped at 64,000 serialized message characters (not exact token cost).
+- Session cap 128; idle TTL 30 minutes; active/waiting sessions protected from expiry.
+  Full unexpired capacity gives 429, never silent LRU eviction.
+- Six complete recent human turns; exact default InMemorySaver compacted through
+  public APIs after turns/repair under session lock. Same saver persists across
+  requests, with one latest checkpoint; default memory/bookkeeping cleared on close.
+
+No aggregate durable rate/spend ceiling, verified ownership or external-provider
+billing guarantee is implemented. Provider token overhead, embedding splitting,
+optional retries, continuous traffic and restarts matter. The former local Docker
+image does not include these changes: a new local build and offline container
+verification are required before its digest can be approved for upload.
+
+## Corpus rights and attribution
+
+[rag_attribution.json](rag_attribution.json) records all five exact PDF SHA-256s,
+authors/titles/source URLs, licenses/evidence, notices and extraction/normalization
+changes. It is an attribution inventory, not a publication authorization or a complete
+bundled license package. PDFs/index/bundle remain unchanged. Applicable license
+notices must accompany an approved image and be available to service recipients.
+
+| Paper | Findings | Remaining disposition |
 | --- | --- | --- |
-| Google ID token supported | IAM-private Cloud Run; one approved trusted principal for a single-user demo | Confirm grader can obtain/send an audience-appropriate token. Multiple independent callers still need application session ownership. |
-| HTTP bearer header supported, Google IAM unsupported | Internet-reachable demo with application bearer authentication; one high-entropy revocable credential per approved caller, mapped server-side to a caller identity | Requires explicit Cloud Run public-admission approval, auth/ownership implementation and a new runtime-secret plan. A shared credential represents one trust domain, not separate users. |
-| Cookies supported but no supplied auth header | A separate reviewed capability/session-cookie design may be possible | Grader cookie persistence and credential bootstrap are unverified; do not implement or claim compatibility yet. |
-| Bare anonymous JSON only | Current shared-memory API cannot establish caller ownership | No verified caller signal distinguishes two people selecting the same session ID. Need instructor-approved protocol support or an approved behavior change; do not claim random IDs, IP addresses or max_instances=1 solve ownership. |
+| RAG 2020 | arXiv v4 nonexclusive grant authorizes arXiv distribution, not established downstream rights. Local file is modified. NeurIPS availability alone is no downstream grant. | Obtain applicable permission/evidence or approve replacement before publication. |
+| ReAct 2022 | arXiv v3 CC BY 4.0; local authors/version identified, no interior license notice found. | Conditional retention; verify exact local material is covered, preserve attribution/notices. Canonical licensed file replacement is an alternative, not performed. |
+| Self-RAG 2023 | arXiv v1 CC BY 4.0; same exact-material limitation. | Conditional retention with attribution/source/license/modification information. |
+| NetMHCpan 2020 | Exact six-page PDF p1 CC BY-NC 4.0 and copyright notice; PMC publisher-hosted article now corroborates it. | Retain for confirmed compliant noncommercial coursework with attribution; no general commercial permission claimed. |
+| MixMHC2pred 2023 | Exact PDF p2 CC BY-NC 4.0. Pages 19-31 are article STAR+METHODS through e13; not a separately identified supplement. No additional exclusion notice located in text review. | Conditional retention for noncommercial coursework; retain authors/publisher notices. Third-party figure/material scope is not comprehensively cleared. |
 
-Recommendation: confirm headers first. Prefer IAM if accepted; otherwise a small
-application bearer-auth layer is less infrastructure than a gateway/load balancer
-for this demo. It preserves request `{"query":"...","session_id":"..."}` and
-response `{"response":"..."}`. Internally namespace threads by the registered
-caller identity and supplied session ID; keep the caller's ID unchanged. Reject
-missing/invalid credentials before Agent admission, using fixed errors and
-constant-time credential comparison. Never use the secret token itself as the
-stored thread ID, and never trust an unverified identity header.
+Educational purpose or private registry alone does not authorize redistribution.
+Compliant CC-covered reuse need not require a separate grant; user approval cannot
+supply missing copyrights. A commercial/broadly reused service would need a new
+noncommercial/scope assessment. Do not bundle unreviewed linked supplementary
+files, datasets, source code, or third-party material merely because the paper is open.
 
-For multiple IAM users, verify a suitable end-user identity token or approved
-gateway identity before namespacing. Cloud Run admission alone is insufficient;
-[token forwarding](https://docs.cloud.google.com/run/docs/authenticating/service-to-service)
-has header/signature semantics that must be tested before relying on an application
-JWT verifier. No authentication/ownership code is implemented in this step.
+Minimum fallback is rights evidence for the current paper; otherwise replace only
+RAG with one approved topic-equivalent paper. Candidate sources:
 
-Any reachable paid-provider demo also needs explicit global/per-caller request
-quotas, counted provider-call/output-token limits, bounded session count/history/TTL,
-and an expiry/revocation policy. Concurrency 1 and maximum 1 are capacity controls,
-not rate, session-memory or spend limits. Proposed initial time-based quotas must
-be selected against expected grading traffic, not invented as grading requirements.
-Suggested review starting point: five chat admissions/minute per credential,
-100 total accepted turns per grading window, and a fixed provider-dollar allowance;
-approve actual numbers and enforce provider reservations before calls. An elapsed
-time limit cannot enforce a dollar allowance. In-process counters are not durable
-across restarts/temporary extra instances; combine them with independently enforced
-provider/account controls or a durable quota store when a hard aggregate allowance
-is required. Verify whether provider controls are enforced limits or alerts.
+- [Li et al., EMNLP Industry 2024](https://aclanthology.org/2024.emnlp-industry.66/),
+  “Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and
+  Hybrid Approach.” Anthology's post-2016 CC BY 4.0 policy provides candidate license
+  evidence; exact downloaded PDF/scope and attribution still need validation.
+- [Niu et al., ACL 2024, RAGTruth](https://aclanthology.org/2024.acl-long.585/), a more
+  evaluation-oriented alternative under the same anthology policy. Confirm course
+  corpus expectations and topical suitability before choosing either.
 
-For a single trusted IAM demo, accepting disposable process-local memory is the
-smallest initial policy. For public/multiple-caller operation, implement ownership
-and retention before deployment. A process restart can lose history even with
-max_instances=1; statefulness, durability and user isolation are separate properties.
+These are candidates, not approved replacements. A different work gets a truthful
+new paper ID/filename and separate versioned manifest/index/bundle. Counts/chunk IDs
+may change; do not fabricate 615. Update SPEC/checksums/fixtures, native retrieval
+and semantic evaluation, license notices and image pin through reviewed changes.
+Keep remaining papers only when their conditions pass; replace any NC material if
+intended use falls outside its grant. Never change protected old artifacts.
 
-## Five-paper rights decisions
+## Embedding model provenance and rebuild proposal
 
-Existing exact-file findings are in [rag_distribution_review.md](rag_distribution_review.md).
-Rechecked arXiv license links and both local biomedical PDF notices. The applicable
-[CC BY](https://creativecommons.org/licenses/by/4.0/legalcode.en) and
-[CC BY-NC](https://creativecommons.org/licenses/by-nc/4.0/legalcode.en) grants can
-authorize covered reuse if their conditions are met; an additional rights-holder
-permission is not automatically necessary for a compliant CC-licensed use. User
-approval here authorizes our deployment action; it cannot confer missing copyrights.
+Git foundation fc9ba8f and embedding implementation 757677d configure
+text-embedding-3-small. Settings allow env overrides. Neither ignored local PDFs/index
+nor an ingestion-run attestation is versioned. Read-only original/recovered SQLite
+collections have dimension 1536, config `{}`, no collection model metadata, no chunk
+model field and only an unknown sparse function in schema. Bundle still explicitly
+records unverified-legacy-model. These facts make small a hypothesis, not verified
+historical provenance. Self-query/preservation tests do not establish compatibility
+with newly generated query vectors. No secret files/provider records were accessed.
 
-| Paper | Evidence | Disposition before remote publication |
+If reliable operator run records linked to the source fingerprint exist, review
+those first. Otherwise choose explicitly between accepted exploratory uncertainty
+with approved limited live evaluation and regeneration for known provenance.
+
+Proposed rebuild, NOT EXECUTED: approved corpus into a new directory; fixed
+manifest/PDF hashes, locked parser/chunker versions, deterministic chunking and
+reviewed text normalization, explicit OpenAI text-embedding-3-small model ID with
+1536 dimensions (subject to model approval), offline token-count/cost estimate and
+paid-call allowance. Record effective/returned model identity, date and provider
+response metadata, chunk/vector hashes and dependencies. Model aliases can change;
+claim deterministic input preparation plus a pinned evaluated output snapshot,
+not future byte-identical provider outputs. Re-embed all approved chunks if old
+model cannot be verified; don't mix new and old vectors merely on equal dimension.
+Validate IDs/metadata, finite FLOAT32 vectors, SQLite/FTS/contains, native vector
+retrieval plus semantic queries/citations, checksum inventory and container reopening.
+Old indexes/bundles stay intact; no API calls or rebuild are approved by this plan.
+
+## Final decision table
+
+| Category | Item | Status/action |
 | --- | --- | --- |
-| `rag_2020` | arXiv v4 uses an [arXiv distribution grant](https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html), not a downstream public license. The [NeurIPS paper page](https://proceedings.neurips.cc/paper/2020/hash/6b493230-Abstract.html) provides access but no downstream grant was established; its [copyright FAQ](https://neurips.cc/FAQ/Copyright) describes a grant to NeurIPS. | Obtain applicable permission or approved license evidence for the intended use. If neither is available, replace this paper before publishing this corpus. Downloading the NeurIPS copy alone does not resolve rights. |
-| `react_2022` | [arXiv v3](https://arxiv.org/abs/2210.03629v3) links CC BY 4.0 | Keep if exact local text/material is covered and notices/attribution are completed; no demonstrated need to replace it. |
-| `self_rag_2023` | [arXiv v1](https://arxiv.org/abs/2310.11511v1) links CC BY 4.0 | Same conditional retention as ReAct. |
-| `netmhcpan_2020` | Local PDF p1: CC BY-NC 4.0 | Keep for a use that satisfies noncommercial conditions and attribution; hosting on paid infrastructure alone does not establish commercial purpose. Confirm actual purpose/recipients; seek separate permission or replace if the planned use falls outside the grant. |
-| `mixmhc2pred_2023` | Local PDF p2: CC BY-NC 4.0; additional material included | Same noncommercial decision, plus supplementary/third-party scope review. Replace or omit unlicensed material only through an approved new corpus if scope cannot be established. |
+| Confirmed implementation | Exact HTTP schema, real 3-server/4-tool MCP, ordinary two-turn memory, cancellation | Existing behavior retained and local budget/retention regressions added |
+| Confirmed artifact | Local recovered 615-vector/five-paper snapshot | Protected files unchanged; publication authorization absent |
+| Resolved assignment fact | Public example/us-west1/two-turn/recycling requirements | Supplied reviewed-handout findings; adopt anonymous grading recommendation |
+| Factual blocker | Exact arXiv-file license scope, historical model attestation, project policies/quotas | Still unresolved; approval cannot convert assumptions into verification |
+| Rights blocker | RAG downstream permission; attribution/NC and third-party scope conditions | Resolve or approve a rights-compliant separate corpus workflow |
+| Technical follow-up | New image/offline Docker checks, native Cloud Run CPU/memory/startup, live providers | Local code tests now; container rebuild before upload; native/live only after authorization |
+| User approval | Anonymous session limitations, rights-compliant corpus, provenance acceptance/rebuild | Explicit choices required; no mandatory grading authentication |
+| User approval | Project/billing/identities/secrets/model/budget/expiry; publication/deployment | Placeholders remain; no cloud action authorized |
+| Prohibited now | GCP/IAM/billing mutation, image push, paid calls, corpus writes, Git stage/commit/push, PROCESS_LOG edits | None performed |
 
-Complete a notices inventory with creators, title/source/version, license link,
-supplied copyright/disclaimer notices and relevant modification information,
-including extraction and the two-character recovered-chunk normalization where
-applicable. License conditions also apply to indexed source text and service
-outputs; storing PDFs privately is not a blanket permission to redistribute text.
-Check that required notices accompany the distributed image and are available to
-service recipients without changing the `/chat` JSON schema. If the present image
-lacks required notices, the future reuse/push command is blocked until a reviewed
-notices packaging change, local rebuild and verification produce a new approved
-image digest. Keep immutable old bundles unchanged; do not infer that the current
-Docker image already has a complete attribution package.
-Local possession, private remote image copies and public Workspace/Evidence output
-are separate uses to review. No blanket fair-use or educational exemption is assumed.
+Minimum work before Step 4.8: resolve rights/notices or approved replacement;
+choose provenance acceptance/new-index path; approve public risk/provider allowance
+and expiry; rebuild/test the local image with approved notices and current code;
+fill project/runtime/deployer/model/budget references; approve named provisioning,
+publication and private deployment actions. Native health/resources and a separately
+approved counted live turn precede the explicit public-admission grant.
 
-Minimum-change fallback, **not executed**:
+Cloud deployment is not yet ready for approval: access design and local safeguards
+are prepared, but artifact rights/provenance decisions, new image verification and
+concrete cloud/public spending approvals remain. README, three diagrams and
+PROCESS_LOG final narrative are deferred to Step 4.11; none was modified here.
 
-1. Prefer establishing rights for the existing five papers, preserving all artifacts.
-2. If RAG permission remains unavailable, propose replacing only that paper with an
-   instructor-approved, source-verified CC BY/CC0 paper covering the required topic;
-   no specific substitute is represented as approved. Retain the other four only
-   after their conditions pass. For a noncommercial-scope failure, replace the
-   affected biomedical paper(s) as well.
-3. Use a separate versioned corpus/manifest/index/bundle. Give a different paper a
-   truthful new paper ID and Workspace filename; never label it `rag_2020`. Preserve
-   remaining paper IDs, page attribution and metadata. New pagination/chunk text
-   can change chunk IDs and counts; 615 is the old snapshot invariant, not a count
-   to fabricate for the replacement. Verify assignment acceptance before proceeding.
-4. Pin input file hashes, parser/chunker/dependency versions and model/dimensions.
-   Because legacy model identity is unresolved, do not combine newly generated
-   embeddings with old vectors on dimensional equality alone. If provenance cannot
-   be established, regenerate the entire approved corpus in one coherent embedding
-   space with an explicit paid-call budget.
-5. Revalidate SQLite/FTS, documents/metadata/vector consistency, functional filtering,
-   native retrieval and semantic relevance, package inventory and checksums; update
-   runtime SPEC/digest and affected fixtures through explicit reviewed changes.
-   Build a newly approved image after tests. Preserve all old artifacts for rollback.
+## Step 4.7c verification
 
-## Embedding provenance investigation
+- `.venv/bin/python -m pytest -q --tb=short`: **400 passed, 38 deselected**,
+  five existing PyMuPDF/SWIG warnings, 151.81 seconds.
+- `.venv/bin/python -m pytest tests/test_agent_budgets.py tests/test_api_lifecycle.py tests/test_api_limits.py tests/test_agent_mcp.py -q --tb=short`:
+  **66 passed** at that focused checkpoint, 52.20 seconds. Later added budget/guard
+  regressions are included in the final ordinary and targeted results below.
+- `.venv/bin/python -m pytest tests/test_agent_budgets.py tests/test_agent_mcp_protocol.py tests/test_agent_mcp_reliability.py -k 'not live_llm' -q --tb=short`:
+  **18 passed, 1 deselected**, 29.29 seconds. Real STDIO processes, deterministic LLM/
+  provider fixtures; routing, memory/isolation, cancellation/cleanup and limits.
+- Live-test guard verification with the single live test and `-m integration`:
+  **1 skipped** without opt-in, 1.85 seconds; no provider construction/request.
+- Ruff lint/format passed (93 files formatted); `git diff --check` passed.
+- Unchanged artifact validator passed: 615 chunks, five IDs, 1536 dimensions.
+  All 29 protected files matched SHA-256, size and mtime. Attribution hashes match
+  all five PDFs. Eight command blocks passed Bash syntax checks; none executed.
 
-Verified local evidence:
+Verification incident: an earlier overly broad `-m integration` selection selected
+one legacy live test. It attempted an OpenAI connection and failed at DNS resolution
+before a provider response/request could be reached. It was not retried or escalated.
+The test now requires explicit `VERIDEX_RUN_LIVE_PROVIDERS=1`, with an ordinary
+regression verifying its skip before provider use. No successful live-provider
+validation was performed; do not characterize the investigation as having made no
+connection attempt. Initial queue/concurrency regressions were corrected by explicitly
+enabling the higher limits those tests intend to exercise, preserving their assertions.
 
-- Git foundation `fc9ba8f` sets `text-embedding-3-small` in Settings and `.env.example`.
-  Searching all refs for `text-embedding` found no alternative configured model in
-  tracked source history. Initial embedding implementation `757677d` and current
-  `embeddings.py` both construct OpenAIEmbeddings from Settings.
-- Settings permit environment/ignored `.env` overrides. Neither source defaults nor
-  tests attest to the effective configuration of a particular ingestion run.
-  No secret file or provider account was accessed in this investigation.
-- Git tracks the manifest/evaluation questions, not the SQLite index/PDFs. There is
-  no versioned ingestion-run record linking this database fingerprint to an API
-  response model identity or effective ingestion configuration.
-- Read-only SQLite inspection of original and recovered candidates shows collection
-  `veridex_documents`, dimension 1536, `config_json_str='{}'` and no collection metadata.
-  Schema inspection also found only a sparse-vector function marked `unknown`,
-  with no dense model identity; chunk metadata has no model-origin field. Thus
-  those records provide no historical model identity.
-- Pinned `bundle.json` still declares `unverified-legacy-model`; recovery preserves
-  FLOAT32 vectors and records source hashes. A preservation attestation is not a
-  model-origin attestation. Self-query tests verify existing vector structure, not
-  new query embedding semantic compatibility.
-
-Conclusion: `text-embedding-3-small` is a plausible hypothesis, **not verified**.
-Additional operator ingestion logs/API records tied to the source fingerprint
-could establish provenance if they exist; they were not found in inspected records.
-Comparing freshly embedded sample vectors would require paid-call approval and
-cannot by itself prove the origin of every historical vector.
-
-| Option | Benefit | Limit / approval |
-| --- | --- | --- |
-| Accept documented uncertainty | Preserve all 615 vectors; no re-embedding cost or artifact changes | Explicit exploratory-use acceptance; mark semantic compatibility/reproducibility unverified, approve limited live query checks separately. Not a claim that the model is known. |
-| Establish historical evidence | Can preserve vectors with a supportable model attestation | Requires reliable run/model evidence linked to the database fingerprint; current Git defaults are insufficient. |
-| Regenerate approved corpus | Known configured model, dimensions and corpus/run provenance; one coherent vector space | Separate paid API budget, new index/version/validation/image; never rebuild the protected original. Pin a provider model/version where supported and record returned identity/date; mutable model aliases are not a guarantee of future byte-identical outputs. |
-
-Recommendation: seek operator evidence first. If unavailable, explicit uncertainty
-acceptance is the minimum-change exploratory path; regeneration is preferred for a
-reproducibility claim and necessary to avoid unverified mixed spaces after replacing
-documents. Token count/cost must be estimated offline from the approved new chunks
-before requesting a paid embedding allowance. No embeddings were generated here.
-
-## Command security review
-
-- Prepared deploy commands require IAM (`--no-allow-unauthenticated` and
-  `--invoker-iam-check`); `--ingress=all` controls reachability, not authorization.
-  No public grant is included. Also inspect inherited project/ancestor IAM; a
-  service-only policy audit is insufficient to rule out effective broad access.
-- Runtime secret access is scoped to two secrets; no Owner/Editor or registry writer
-  is granted to runtime. Bootstrap administrators need temporary creation authority;
-  routine deployer and publisher grants stay resource-scoped. A deployer able to
-  execute code as the runtime SA is trusted with its effective secret access, even
-  without direct Secret Accessor. Require reviewed image digests and trusted deployers.
-- Numeric secret references expose names/versions, not values. No payload retrieval,
-  key files, shell tracing or secret build arguments are in the plan. Audit existing
-  literal env settings before printing descriptions of reused services.
-- Min 0/max 1 and budgets reduce exposure but do not bound provider spend. No paid
-  request should be made until a counted live-test plan is approved. Current code
-  lacks a persistent aggregate spend/rate limiter and unbounded histories remain.
-- Command blocks are sequential review material, not an idempotent run-all script.
-  Resolve every placeholder and verify effective IAM, digest and model decisions;
-  do not treat shell syntax checks as cloud-side validation. The CLI is not installed.
-
-## Decision table and approval checklist
-
-| Category | Item | Status / next gate |
-| --- | --- | --- |
-| Confirmed implementation | Exact HTTP contract, persistent MCP, cancellation/shutdown, offline Docker E2E | Prior 389 ordinary / 28 Docker passes; no live-provider/native Cloud Run verification |
-| Confirmed artifact | Five papers, 615 FLOAT32 vectors, dimension 1536, recovered integrity and pinned bundle | Existing validated local/internal snapshot; unchanged by this step |
-| Outstanding factual check | Assignment authentication and paper-substitution requirements | Handout/instructor confirmation needed; IAM grading compatibility unverified |
-| Outstanding factual check | Exact-file license scope/notices, intended noncommercial purpose, RAG permission | Resolve before remote PDF/index copies or public source output |
-| Outstanding factual check | Historical ingestion model; project policies/quotas; native performance | Model unresolved; cloud checks only after separately authorized access/deployment |
-| User approval | IAM versus application-auth demo; callers/ownership/retention/quotas and grading window | Approve one design; implement/test missing controls before public/multi-user use |
-| User approval | Rights-compliant corpus versus replacement | User approval cannot substitute for missing rights; authorize new artifacts/re-embedding only separately |
-| User approval | Accept embedding uncertainty versus verified new index | Record choice and any paid-call/model budget explicitly |
-| User approval | Project/billing/region, identities, budgets/cap, secret operator, image digest and remote recipients | Concrete identifiers still unset; secrets entered outside this agent |
-| User approval | Provisioning, publication, private deployment, live test, later grading access | Separate action gates; no approval inferred from review or prior local builds |
-| Prohibited now | Cloud mutations, IAM/billing changes, Docker push/publication, paid providers | Not performed; remain prohibited without explicit authorization |
-| Prohibited now | Artifact replacement/re-indexing, original/recovered/bundle writes, Git stage/commit/push, PROCESS_LOG edits | Not performed; no artifact replacement authorized |
-
-Minimum path to Step 4.8: confirm grader capability -> choose/approve access and
-session policy -> resolve rights/notices (or approve replacement workflow) ->
-choose provenance acceptance/regeneration -> implement/test required controls ->
-fill project/identity/model/budget placeholders -> approve the named publication
-and provisioning/deployment actions. Limited live-provider and native validation
-follow an authorized private deployment and precede grading exposure.
-
-Step 4.7b investigation is complete. **Step 4.8 is not ready for unconditional
-deployment approval**: unresolved factual/access/rights decisions still determine
-what may be published and how grading can safely invoke it. The plan is ready for
-those specific decisions; none of the prohibited actions is authorized.
-
-## Verification for this step
-
-The unchanged artifact validator passed against the pinned bundle/lock/SPEC:
-615 chunks, 1536 dimensions, five IDs. All 29 protected original/recovered/bundle,
-PDF and manifest files retained their recorded SHA-256, size and modification time.
-Seven prepared Bash blocks passed `bash -n`; none executed. Ruff lint passed,
-format check reported 91 files already formatted, and `git diff --check` passed.
-Changes are confined to five planning/security/rights documents. Application code
-and tests are unchanged; ordinary/Docker suites were not re-run for documentation
-changes. No paid providers, cloud operations, remote publication, artifact writes,
-Git staging/commit/push, or PROCESS_LOG changes were performed.
+No cloud mutation, image build/push/publication, paid embedding regeneration,
+corpus write, dependency/production MCP-server change, Git staging/commit/push,
+README/PROCESS_LOG/development-notes change was performed. The existing image and
+prior 28 Docker E2E passes are historical evidence, not verification of this changed
+source. A new offline image build/E2E run remains before publication approval.

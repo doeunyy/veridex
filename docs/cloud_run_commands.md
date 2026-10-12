@@ -8,7 +8,7 @@ Flag spellings were checked against the current
 [gcloud run deploy reference](https://docs.cloud.google.com/sdk/gcloud/reference/run/deploy).
 No cloud-side syntax/policy validation has been executed.
 The [Step 4.7b approval checklist](deployment_approval_checklist.md) records unresolved
-grading, session ownership, rights, model and spending gates. Do not execute these
+public grading approval, accepted anonymous-session limits, rights, model and spending gates. Do not execute these
 blocks until the relevant decisions and named actions are explicitly approved.
 
 ## 1. Approved identifiers (no secrets)
@@ -16,7 +16,7 @@ blocks until the relevant decisions and named actions are explicitly approved.
 ```bash
 export VERIDEX_PROJECT_ID='REPLACE_WITH_APPROVED_PROJECT_ID'
 export VERIDEX_BILLING_ACCOUNT='REPLACE_WITH_APPROVED_BILLING_ACCOUNT_ID'
-export VERIDEX_REGION='us-central1'
+export VERIDEX_REGION='us-west1'
 export VERIDEX_REPOSITORY='veridex'
 export VERIDEX_SERVICE='veridex'
 export VERIDEX_RUNTIME_SA="veridex-runtime@${VERIDEX_PROJECT_ID}.iam.gserviceaccount.com"
@@ -82,8 +82,9 @@ when infrastructure already exists.
 
 ## 3. Image publisher: only after explicit PDF/remote-copy approval
 
-Use the already verified image after rechecking its identity and bundle. No new
-build is proposed. A local image ID is not the registry manifest digest.
+Use the already verified image after rechecking its identity and bundle. Step 4.7c changed local application code: rebuild with the named RAG context and
+rerun offline Linux/container checks before approving a new image. The historical
+Step 4.6 tag is not evidence for the current source. A local image ID is not the registry manifest digest.
 
 ```bash
 docker image inspect veridex:phase04-local --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Config.User}}'
@@ -160,8 +161,8 @@ gcloud run services describe "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --pro
 For an approved user invoker, use `gcloud run services proxy` and GET `/health` and
 `/ready` through its localhost listener. For service-account invocation, use a
 short-lived audience-bound ID token through approved impersonation/federation.
-Do not print/store tokens or use persistent keys. Confirm the grader's actual
-authentication capability before selecting either path. No `/chat` live-provider
+Do not print/store tokens or use persistent keys. These are private-staging diagnostics, not mandatory grading authentication.
+The selected grading target uses the separately approved public gate below. No `/chat` live-provider
 command is included: the counted minimal call plan needs separate approval.
 
 ## 6. Measurements, rollback and grading gate
@@ -176,7 +177,37 @@ If native checks fail, with separate operational authorization remove the approv
 invoker binding to stop new access, or restore traffic to a previously approved
 healthy revision. Neither action ensures already-running provider calls stop.
 No rollback target exists before the first successful deployment; do not invent one.
-Record the actual good revision before a later update. Public-access mutations,
-resource deletion, secret destruction and automatic spending kill switches are not
-included in this proposal. Grade only after rights/access/provider gates pass;
+Record the actual good revision before a later update. Resource deletion, secret destruction and automatic spending kill switches are not
+included in this proposal. Public access is prepared only in the separate gate below. Grade only after rights/access/provider gates pass;
 approve time-limited access and its eventual revocation explicitly.
+
+## 7. Public grading gate — PREPARED, NOT EXECUTED
+
+The instructor example uses `--allow-unauthenticated`. Keep initial staging private,
+then grant anonymous invocation as a separate access action only after explicit
+user approval of rights, provider spending, expiry and anonymous shared-ID risks.
+No required authentication header, token or new JSON field is added. This function
+is merely defined; unrelated provisioning/deployment commands do not invoke it.
+The approval marker is an operator guard, not evidence of user authorization.
+
+```bash
+enable_approved_public_grading() {
+  if [ "${VERIDEX_PUBLIC_APPROVAL:-}" != "APPROVED:${VERIDEX_PROJECT_ID}:${VERIDEX_SERVICE}" ]; then
+    printf '%s\n' 'Public grading access has not been explicitly approved.' >&2
+    return 1
+  fi
+  gcloud run services add-iam-policy-binding "$VERIDEX_SERVICE" \
+    --member=allUsers --role=roles/run.invoker \
+    --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID"
+}
+```
+
+Do not set the marker or call the function during setup. Its effect is public
+Cloud Run invocation, equivalent in access intent to the example's unauthenticated
+flag. Organization policy may prohibit the grant; stop rather than bypassing it.
+Record the approved grading end date and operator. Separately approved expiry
+removes this grant and audits inherited access; min 0 and max 1 do not expire a URL.
+Revocation cannot recall exposed conversation content or cancel all in-flight
+provider requests. Cloud resource deletion, secret rotation and image retention are
+separate reviewed cleanup actions. The public service has no verified ownership;
+colliding session IDs share retained history. No confidential data should be used.

@@ -1,6 +1,7 @@
 # Local RAG candidate distribution review
 
-Reviewed 2026-10-10 against the five manifest-listed local PDFs and their exact
+Reviewed 2026-10-10, supplemented by Step 4.7c on 2026-10-12, against the five
+manifest-listed local PDFs and their exact
 SHA-256 fingerprints recorded in `bundle.json`. This review grants no distribution
 approval. The bundle is local/internal only; remote image publication is blocked
 pending authorization for the intended recipients and use.
@@ -13,9 +14,13 @@ pending authorization for the intended recipients and use.
 | `netmhcpan_2020` / `netmhcpan_2020.pdf` | PDF page 1 expressly identifies [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) and noncommercial reuse with citation. | Noncommercial use and attribution conditions must be satisfied; authorization for intended deployment/distribution remains pending. |
 | `mixmhc2pred_2023` / `mixmhc2pred_2023.pdf` | PDF page 2 expressly identifies [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). The local 31-page file includes additional material. | Verify supplementary-material and third-party scope, attribution, and noncommercial conditions before approval. |
 
-Publisher web verification was unavailable for PMC (browser challenge) and
-ScienceDirect (retrieval failure); the biomedical evidence above is from the actual
-local PDFs. Public possession/access alone was not treated as distribution rights.
+Step 4.7c successfully reopened the PMC article and corroborated NetMHCpan's CC
+BY-NC notice. Cell/ScienceDirect verification remains unavailable; MixMHC2pred's
+notice is from the exact local PDF. Its pages 19-31 are the article's STAR+METHODS
+through e13, not a separately identified supplemental attachment. Linked external
+supplements are not included/cleared by this review. No additional exclusion notice
+was located in the PDF text review, which is not comprehensive third-party clearance.
+Public possession/access alone was not treated as distribution rights.
 CC licenses may not cover third-party material or every right needed for a planned
 use. The index contains source text as well as vectors; the rights review also
 applies to distribution of Chroma contents, not only PDFs.
@@ -34,3 +39,12 @@ marker, never a claim that old vectors came from the current configured model.
 from missing permission. Compliant reuse of covered CC-licensed material does not
 automatically require a separate rights-holder grant. RAG's downstream permission
 remains unestablished; conditional corpus replacement is proposed, not performed.
+
+Step 4.7c prepared [rag_attribution.json](rag_attribution.json) with all five exact
+hashes, authors, titles, sources, notices, license evidence and extraction/recovery
+modifications. NetMHCpan can be retained for a compliant noncommercial coursework
+use with attribution; MixMHC2pred has the same license condition plus material-scope
+review. Paid hosting alone does not establish a commercial purpose. ReAct/Self-RAG
+remain conditional on applicability of their arXiv CC BY grants to the exact local
+material. The inventory is not publication approval or the final packaged license
+notices. RAG needs applicable downstream permission or an approved replacement.
