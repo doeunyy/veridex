@@ -132,6 +132,8 @@ pip-delete-this-directory.txt
 # ------------------------------------------------------------
 data/papers/
 data/index/
+.artifacts/
+.docker-artifacts/
 data/chroma/
 chroma_db/
 chroma.sqlite3
