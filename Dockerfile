@@ -11,24 +11,27 @@ FROM dependencies AS verified
 ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/app/src PYTHONDONTWRITEBYTECODE=1
 COPY src/ ./src/
 RUN python -m compileall -q /app/src
-COPY scripts/serve_api.py scripts/container_entrypoint.py scripts/check_container.py ./scripts/
+COPY scripts/serve_api.py scripts/container_entrypoint.py scripts/check_container.py scripts/prepare_notices.py ./scripts/
 # Named context is independently supplied; no raw repository data is copied.
 COPY --from=rag /manifest.json /bundle.json /opt/veridex/rag/
-COPY --from=rag /papers/rag_2020.pdf /papers/react_2022.pdf /papers/self_rag_2023.pdf /papers/netmhcpan_2020.pdf /papers/mixmhc2pred_2023.pdf /opt/veridex/rag/papers/
+COPY --from=rag /papers/rag_long_context_2024.pdf /papers/react_2022.pdf /papers/self_rag_2023.pdf /papers/netmhcpan_2020.pdf /papers/mixmhc2pred_2023.pdf /opt/veridex/rag/papers/
 COPY --from=rag /chroma/ /opt/veridex/rag/chroma/
-ARG RAG_BUNDLE_SHA256=6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8
+ARG RAG_BUNDLE_SHA256=7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb
 ENV RAG_BUNDLE_SHA256=$RAG_BUNDLE_SHA256
 RUN python scripts/check_container.py
+RUN python scripts/prepare_notices.py
 RUN find /opt/veridex/rag -type d -exec chmod 0555 {} + && find /opt/veridex/rag -type f -exec chmod 0444 {} +
 
 FROM python:3.13.16-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f AS runtime
 WORKDIR /app
 ENV PATH=/opt/venv/bin:$PATH PYTHONPATH=/app/src PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 APP_ENV=production PORT=8080
-ARG RAG_BUNDLE_SHA256=6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8
+ARG RAG_BUNDLE_SHA256=7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb
 ENV RAG_BUNDLE_SHA256=$RAG_BUNDLE_SHA256 DOCUMENTS_DIR=/opt/veridex/rag/papers WORKSPACE_MANIFEST_PATH=/opt/veridex/rag/manifest.json
 COPY --from=dependencies /opt/venv /opt/venv
 COPY --from=verified /app /app
 COPY --from=verified /opt/veridex/rag /opt/veridex/rag
+COPY --from=verified /opt/veridex/notices /opt/veridex/notices
+ENV CORPUS_ATTRIBUTION_PATH=/opt/veridex/notices/attribution.json OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 RUN groupadd --gid 10001 veridex && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /tmp/veridex --shell /usr/sbin/nologin veridex
 USER 10001:10001
 EXPOSE 8080

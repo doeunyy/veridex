@@ -4,12 +4,13 @@ from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from typing import Annotated, Protocol
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from veridex.agent.budgets import SessionCapacityError
 from veridex.agent.mcp_service import MCPAgentService
+from veridex.api.attribution import CorpusAttribution, load_attribution
 from veridex.api.lifecycle import agent_lifespan
 from veridex.api.limits import Admission, ChatLimitsMiddleware
 from veridex.api.schemas import ChatRequest, ChatResponse, HealthResponse, ReadyResponse
@@ -64,6 +65,7 @@ def create_app(
     application.state.lifecycle_started = False
     application.state.chat_tasks = set()
     config = config or settings
+    attribution = load_attribution(config.corpus_attribution_path)
     application.state.admission = Admission(config)
     application.add_middleware(ChatLimitsMiddleware, state=application.state, config=config)
 
@@ -86,12 +88,15 @@ def create_app(
     )
     async def chat(
         body: ChatRequest,
+        http_response: Response,
         service: Annotated[AsyncAgentService, Depends(get_agent_service)],
     ) -> ChatResponse:
         if application.state.shutting_down:
             raise HTTPException(status_code=503, detail="Agent service is unavailable.")
         try:
             response = await service.achat(query=body.query, session_id=body.session_id)
+            if attribution is not None:
+                http_response.headers["Link"] = '</attribution>; rel="describedby"'
             return ChatResponse(response=response)
         except SessionCapacityError:
             raise HTTPException(status_code=429, detail="Session capacity exhausted.") from None
@@ -100,6 +105,12 @@ def create_app(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Agent request failed.",
             ) from None
+
+    @application.get("/attribution", response_model=CorpusAttribution)
+    async def corpus_attribution() -> CorpusAttribution:
+        if attribution is None:
+            raise HTTPException(status_code=503, detail="Corpus attribution is unavailable.")
+        return attribution
 
     @application.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:

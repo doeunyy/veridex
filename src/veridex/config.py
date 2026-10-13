@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     provider_timeout_seconds: float = Field(default=30, gt=0, le=45, allow_inf_nan=False)
     provider_max_retries: int = Field(default=0, ge=0, le=1)
 
+    corpus_attribution_path: Path | None = None
+
     documents_dir: Path = Path("./data/papers")
     workspace_manifest_path: Path = Path("./data/samples/manifest.json")
     chroma_persist_dir: Path = Path("./data/index")

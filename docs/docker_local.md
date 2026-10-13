@@ -1,3 +1,44 @@
+# Current release: Corpus v2 (Step 4.7h)
+
+The current Dockerfile/runtime consume only `.artifacts/versions/veridex-rag-v2-local`
+and its pinned bundle digest. The historical Step 4.5 commands below refer to v1;
+they require the corresponding historical checkout and are not current build commands.
+See [release_readiness_47h.md](release_readiness_47h.md) for current verification.
+
+```sh
+.venv/bin/python scripts/rebuild_corpus_v2.py validate \
+  --metadata-sha256 7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb
+docker buildx build --platform linux/amd64 \
+  --build-context rag=.artifacts/versions/veridex-rag-v2-local \
+  --build-arg RAG_BUNDLE_SHA256=7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb \
+  --load --tag veridex:phase04-v2-local .
+```
+
+The verified stage explicitly selects the replacement PDF, validates 586 vectors,
+five v2 IDs, metadata, SQLite/FTS5, four text filters and all native self-queries.
+No original/corrupt/v1 index is supplied. The minimal runtime remains non-root,
+one worker, `0.0.0.0:$PORT`, with the original bounded shutdown policy.
+`OPENAI_EMBEDDING_MODEL` is set to `text-embedding-3-small`; private Chroma copies
+remain separate from the immutable canonical bundle. Main context exclusions are
+unchanged. Full CC BY/CC BY-NC 4.0 texts are specifically included under source;
+no documentation directory, credential or private note is broadly copied.
+
+Image notices: `/opt/veridex/notices/attribution.json`, `CORPUS_NOTICE.txt`,
+`CC-BY-4.0.txt`, `CC-BY-NC-4.0.txt`, all read-only. GET `/attribution` serves
+whitelisted authors/titles/versions/sources/licenses/modifications/scope information
+without provider calls or internal provenance. Successful `/chat` responses link
+to it with an HTTP `Link` header; the exact JSON response remains unchanged.
+`CORPUS_ATTRIBUTION_PATH` configures the packaged notice location. Local apps without
+that configuration return a safe 503 from `/attribution`, with existing APIs intact.
+No POST/update mechanism exists. [Current notice](rag_attribution_v2.json) is a
+review copy; the build generates notices from the digest-validated bundle itself.
+
+NetMHCpan/MixMHC2pred retain noncommercial conditions and third-party exclusions.
+This local release is not clearance for arbitrary commercial redistribution.
+Remote registry publication and Cloud Run deployment require separate authorization.
+
+---
+
 # Step 4.5 local Linux/amd64 image
 
 This image is a local/internal candidate. Do not push it or use a remote builder:

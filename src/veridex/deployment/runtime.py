@@ -7,10 +7,17 @@ import tempfile
 from contextlib import closing
 from pathlib import Path
 
-from veridex.rag.artifacts import ArtifactError, _check_index, digest, validate_bundle
-from veridex.rag.recovery import CLEAN_SHA256, SPEC, TARGET, canonical, native
+from veridex.rag.artifacts import ArtifactError, ArtifactSpec, _check_index, digest, validate_bundle
+from veridex.rag.corpus_v2 import EXPECTED_IDS
+from veridex.rag.rebuild_v2 import FILTER_TERMS, canonical, native_check
 
-BUNDLE_SHA256 = "6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8"
+BUNDLE_SHA256 = "7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb"
+SPEC = ArtifactSpec(
+    embedding_model="text-embedding-3-small",
+    embedding_dimension=1536,
+    chunk_count=586,
+    document_ids=sorted(EXPECTED_IDS),
+)
 BUNDLE = Path("/opt/veridex/rag")
 LOCK = Path("/app/uv.lock")
 
@@ -47,7 +54,10 @@ def prepare(
 
 def audit(*, root: Path = BUNDLE, checksum: str = BUNDLE_SHA256, lock: Path = LOCK) -> dict:
     """Offline full-vector and text-filter checks; Chroma sees only a writable copy."""
-    validate(root, checksum=checksum, lock=lock)
+    bundle_metadata = validate(root, checksum=checksum, lock=lock)
+    import json
+
+    provenance = json.loads(bundle_metadata.embedding_model_provenance)
     with closing(
         sqlite3.connect(
             (root / "chroma/chroma.sqlite3").resolve().as_uri() + "?mode=ro&immutable=1", uri=True
@@ -76,15 +86,22 @@ def audit(*, root: Path = BUNDLE, checksum: str = BUNDLE_SHA256, lock: Path = LO
                     "vector_hex": vectors[identifier].hex(),
                 }
             )
-    target = next(r for r in data if r["id"] == TARGET)
-    if len(target["document"]) != 927 or digest(target["document"].encode()) != CLEAN_SHA256:
-        raise ArtifactError("Approved recovered chunk does not match its reviewed text hash.")
+    expected_hashes = provenance["vector_hashes"]
+    if set(expected_hashes) != {r["id"] for r in data} or any(
+        digest(bytes.fromhex(r["vector_hex"])) != expected_hashes[r["id"]] for r in data
+    ):
+        raise ArtifactError("V2 vectors differ from recorded embedding provenance.")
+    run = provenance["embedding_run"]
+    if run["status"] != "complete" or any(
+        r["model"] != SPEC.embedding_model or r["outcome"] != "success" for r in run["requests"]
+    ):
+        raise ArtifactError("V2 embedding model provenance is incomplete.")
     with tempfile.TemporaryDirectory(prefix="veridex-audit-") as scratch:
         temporary = Path(scratch)
         index = writable_copy(root / "chroma", temporary)
         payload = temporary / "records.json"
         payload.write_bytes(canonical(data))
-        result = native(index, payload, build=False)
+        result = native_check(index, payload, build=False)
         _check_index(index, SPEC)
         with closing(sqlite3.connect(index / "chroma.sqlite3")) as db:
             db.execute(
@@ -97,8 +114,8 @@ def audit(*, root: Path = BUNDLE, checksum: str = BUNDLE_SHA256, lock: Path = LO
         "dimension": SPEC.embedding_dimension,
         "sqlite_version": sqlite3.sqlite_version,
         "sqlite_fts5_integrity": "ok",
-        "target_chunk": TARGET,
-        "embedding_model_identity": "UNVERIFIED",
+        "text_filter_terms": FILTER_TERMS,
+        "embedding_model_identity": SPEC.embedding_model,
         "remote_publication": "BLOCKED",
     }
 
@@ -107,6 +124,7 @@ def bootstrap():
     index = prepare(checksum=os.environ.get("RAG_BUNDLE_SHA256", BUNDLE_SHA256))
     os.environ["CHROMA_PERSIST_DIR"] = str(index)
     os.environ["CHROMA_COLLECTION"] = SPEC.collection
+    os.environ["OPENAI_EMBEDDING_MODEL"] = SPEC.embedding_model
     os.environ["DOCUMENTS_DIR"] = str(BUNDLE / "papers")
     os.environ["WORKSPACE_MANIFEST_PATH"] = str(BUNDLE / "manifest.json")
     # exec retains PID 1 signal delivery and the runner's 0.5 + 8 second drain policy.
