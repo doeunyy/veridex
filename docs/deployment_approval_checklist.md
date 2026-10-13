@@ -191,3 +191,30 @@ uncertainty acceptance or a separately approved coherent new index. Proposed clo
 timeout is now 300s because Cloud Run includes startup, with native tuning required.
 All public/provider/cloud/registry action gates remain unapproved. No PDF downloads,
 corpus changes, provider API calls, GCP changes or image pushes occurred in 4.7d.
+
+## Step 4.7h superseding release gate
+
+Corpus v2 replaces RAG 2020 with the approved ACL CC BY paper; all 586 vectors now
+have recorded `text-embedding-3-small` provenance. Image/service attribution is
+implemented. [Current release evidence](release_readiness_47h.md) supersedes the
+v1 rights/model/notice blockers above, preserving those sections as history.
+
+Before Step 4.8 explicitly approve:
+
+1. Noncommercial coursework recipients/use and dated demo expiry; acknowledge the
+   two CC BY-NC papers and third-party scope limitations. Commercial expansion needs
+   new permission/replacement review.
+2. Public grading invocation and anonymous session-ID collision/no verified ownership
+   risks; memory is per-instance and neither durable nor confidential for colliding IDs.
+3. Generation model, separately counted live OpenAI/Tavily validation plan, ongoing
+   provider spending allowance/caps and shutdown/expiry procedure. No new paid call is
+   authorized by the completed embedding run or offline Docker tests.
+4. Exact GCP project/billing, us-west1 region, registry/service, runtime and deployment
+   identities, per-secret access and enabled Secret Manager versions (never key values).
+5. Publication of the exact reviewed image to the named registry/recipients, followed
+   by the named provisioning/IAM/private deployment operations; separately approve
+   public admission after native/live acceptance.
+
+Local technical validation is complete; native Cloud Run performance and live
+provider behavior remain unmeasured. No cloud mutation or remote publication has
+been authorized or performed. PROCESS_LOG/README finalization stays Step 4.11.

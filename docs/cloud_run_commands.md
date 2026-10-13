@@ -26,7 +26,7 @@ export VERIDEX_INVOKER_MEMBER='user:REPLACE_WITH_APPROVED_TRUSTED_INVOKER'
 export VERIDEX_OPENAI_SECRET_VERSION='REPLACE_WITH_ENABLED_NUMERIC_VERSION'
 export VERIDEX_TAVILY_SECRET_VERSION='REPLACE_WITH_ENABLED_NUMERIC_VERSION'
 export VERIDEX_OPENAI_MODEL='REPLACE_WITH_APPROVED_GENERATION_MODEL'
-export VERIDEX_EMBEDDING_MODEL='REPLACE_WITH_APPROVED_QUERY_EMBEDDING_MODEL'
+export VERIDEX_EMBEDDING_MODEL='text-embedding-3-small'
 export VERIDEX_IMAGE_TAG="${VERIDEX_REGION}-docker.pkg.dev/${VERIDEX_PROJECT_ID}/${VERIDEX_REPOSITORY}/veridex:phase04-reviewed"
 ```
 
@@ -211,3 +211,14 @@ Revocation cannot recall exposed conversation content or cancel all in-flight
 provider requests. Cloud resource deletion, secret rotation and image retention are
 separate reviewed cleanup actions. The public service has no verified ownership;
 colliding session IDs share retained history. No confidential data should be used.
+
+## Step 4.7h release selection — PREPARED, NOT EXECUTED
+
+Publish only the exact reviewed `veridex:phase04-v2-local` candidate identified in
+[release_readiness_47h.md](release_readiness_47h.md), after explicit publication
+authorization. Its bundled corpus digest is
+`7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
+The query embedding model must remain `text-embedding-3-small` to match v2.
+This model setting does not authorize paid queries or cloud mutations. Keep public
+admission separate from provisioning/private deployment; do not run these blocks
+until project, identities, secrets, provider allowance and expiry are approved.

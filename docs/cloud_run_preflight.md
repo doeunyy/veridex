@@ -346,3 +346,13 @@ production startup passed. Proposed Cloud Run timeout increases to 300s to allow
 measured emulated cold startup plus HTTP budget; native performance remains unmeasured.
 No cloud settings were changed. Rights/notices, model uncertainty acceptance and
 named publication/deployment/public-access approvals remain gates.
+
+## Step 4.7h artifact update
+
+The current locally verified release is Corpus v2 with `text-embedding-3-small`,
+1536 dimensions, 586 chunks and `rag_long_context_2024` replacing `rag_2020`.
+[Release verification](release_readiness_47h.md) supersedes historical v1/model-unknown
+release assumptions. GET `/attribution` plus image notices now deliver attribution;
+noncommercial and third-party scope conditions remain. Public anonymous access,
+provider spending/expiry, named cloud identities/resources/secrets, registry push
+and deployment still require explicit approval. No cloud commands were run.
