@@ -1,3 +1,8 @@
+> Current Step 4.8.0 preparation: see [gcp_preparation_480.md](gcp_preparation_480.md).
+> Region/private-first/noncommercial use/$5 monthly alert decisions are confirmed.
+> Project, cloud actions and image publication are not approved. The current artifact
+> is v2; explicitly historical v1 records below are not deployment inputs.
+
 # Phase 04 Step 4.7: Cloud Run deployment preflight
 
 Planning review: 2026-10-12. No cloud resources, IAM, billing, images, or remote
@@ -12,7 +17,7 @@ subsequent configuration-history investigation and conditional access/corpus pat
 | Setting | Proposal |
 | --- | --- |
 | Region | `us-west1` (Oregon): matches the handout recommendation and Western US course context. Both it and `us-central1` use Tier 1 pricing; keep registry/service together. Confirm project/location policy before provisioning. |
-| Service | `veridex`, one ingress container, second-generation execution environment |
+| Service | `veridex-staging` (proposed/unapproved), one ingress container, second-generation execution environment |
 | Worker/processes | Existing runner: one Uvicorn worker, three persistent STDIO MCP children, four discovered tools |
 | Resources | 1 vCPU / 2 GiB, subject to native measurements; startup CPU boost enabled |
 | Scaling | Service-level minimum 0, maximum 1; revision maximum 1 as an additional safeguard; no session affinity |
@@ -174,7 +179,7 @@ spend caps. Repeated turns/history, multiple tool rounds, and continuous traffic
 can spend money indefinitely. Approve model pricing, output-token limits, retry
 policy, per-principal quotas and provider-side controls before broad access.
 
-Recommend an alerts-only project budget of $10/month (50%, 90%, 100%, forecast
+Recommend an alerts-only project budget of $5/month (50%, 80%, 100%, forecast
 100%) with approved owner notifications, and separately consider a $5/month Cloud
 Run spend cap if available to this billing account. Ordinary
 [budget alerts](https://docs.cloud.google.com/billing/docs/how-to/budgets) do not
@@ -231,9 +236,9 @@ additional instances reset limits, and sustained traffic still spends money.
 Keep provider/account controls, budget notifications, approved expiry and an
 emergency operator revocation plan; do not describe maximum 1 or alerts as a cap.
 
-## Corpus and embedding publication gates
+## Historical v1 corpus and embedding gates (superseded by v2)
 
-The canonical local bundle is `.artifacts/versions/veridex-rag-v1-local`, pinned
+The historical v1 local bundle is `.artifacts/versions/veridex-rag-v1-local`, pinned
 `bundle.json` SHA-256
 `6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8`.
 It has five PDFs, 615 preserved 1536-dimensional vectors, and validated recovered
@@ -356,3 +361,27 @@ release assumptions. GET `/attribution` plus image notices now deliver attributi
 noncommercial and third-party scope conditions remain. Public anonymous access,
 provider spending/expiry, named cloud identities/resources/secrets, registry push
 and deployment still require explicit approval. No cloud commands were run.
+
+## Step 4.8.0 startup and billing clarification
+
+Retain the conservative 240-second startup-probe window (24 × 10s), with each
+probe timeout 3s. It accommodates the measured ~121s emulated startup with about
+119s headroom, not a guarantee of native success. The current health-check guide
+allows broader windows while the container contract still says listen within four
+minutes; this proposal stays within the stricter bound. Startup probes are platform
+checks and do not require exposing anonymous application invocation.
+
+The proposed 300s HTTP platform timeout is separate and includes startup. A ~121s
+cold start plus the 120s Agent deadline fits (~241s before overhead), but cold start
+plus the full 180s application deadline is ~301s and can exceed the platform budget.
+Preserve application deadlines; first check authenticated readiness, then run paid
+verification only with separate approval. Measure native cold starts before changing
+this proposal. Platform queueing and startup are outside the app timer; do not
+automatically retry `/chat`. Health/ready/attribution requests consume cloud compute
+after deployment even though they do not call paid external providers.
+
+The $5/month project-wide alerts-only budget is the confirmed plan. Optional Cloud
+Run-only spend caps need separate approval/eligibility verification; first-party
+accounts only, single project and eligible billing service, delayed enforcement,
+in-flight/fixed cost exclusions, monthly reset. They cannot cap all GCP plus provider
+spending. No cap, budget, API, IAM or service was created in this step.

@@ -218,3 +218,37 @@ Before Step 4.8 explicitly approve:
 Local technical validation is complete; native Cloud Run performance and live
 provider behavior remain unmeasured. No cloud mutation or remote publication has
 been authorized or performed. PROCESS_LOG/README finalization stays Step 4.11.
+
+## Step 4.8.0 confirmed decisions and next gate
+
+[Environment preparation](gcp_preparation_480.md) is the current approval record.
+Confirmed: us-west1, IAM-private staging first, noncommercial coursework with the
+two CC BY-NC restrictions acknowledged, $5 monthly GCP alerts, v2 release, 1 CPU/2 GiB,
+min 0/max 1, concurrency/application active 1/waiting 0, runtime Secret Manager.
+These choices are not new permission requests. Anonymous public invocation, resource
+creation, IAM/billing changes, image upload and paid provider calls remain unapproved.
+
+Read-only checks found no gcloud installation, so active login/configuration, existing
+projects, billing and USC credits remain unverified. Docker Buildx and the exact v2
+image/bundle identity were checked without rebuild/publication. Next select the
+project/billing/parent, exact principals/resource names/recipients; approve CLI setup
+if needed, then the specifically named Step 4.8.1 provisioning actions. $5 alert
+creation still needs action approval; optional Cloud Run spend caps need separate
+eligibility/permission/availability checks and approval. Public grading and live
+provider allowances remain later gates. No cloud command was executed here.
+
+## Step 4.8.1b resource review
+
+Current [A–E provisioning review](gcp_provisioning_review_481b.md) confirms USC login,
+ACTIVE project `zeta-store-511505-i7` / number `<PROJECT_NUMBER>`, linked open USD billing,
+no us-west1 repositories/services, and no `veridex-runtime` SA. An existing Compute
+default account is left untouched. Cloud Run/Registry/Service Usage are enabled;
+IAM, Secret Manager and Billing Budgets are proposed missing enablement. Prompts
+for the latter two were explicitly declined. Secret/budget collisions and budget
+permission/recipient checks remain pending until approved A enables their APIs.
+
+Approve only A first if desired; E can follow successful read-only budget checks
+before billable contents, and B/C/D require individual approval. The current user
+is project Owner; narrow grants to that same identity would not narrow Owner.
+Runtime receives only two secret-scoped Accessor grants. No API/resource/IAM/budget
+mutation, key creation, image upload, Run deployment or public access occurred.

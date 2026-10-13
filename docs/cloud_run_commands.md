@@ -1,9 +1,17 @@
+> Step 4.8.1b now confirms project `zeta-store-511505-i7`, USC bootstrap identity,
+> and existing billing. Use the separately gated A–E blocks in
+> [gcp_provisioning_review_481b.md](gcp_provisioning_review_481b.md) for provisioning.
+> They supersede the generic bootstrap/budget blocks below. Do not create a project,
+> link billing, or re-enable existing APIs. All publication/deployment/public gates
+> below remain unexecuted and separately authorized.
+
 # Reviewed future Cloud Run commands — NOT EXECUTED
 
 These blocks are a proposed sequence for Step 4.8, not authorization and not a
 run-all script. Stop at each gate in [cloud_run_preflight.md](cloud_run_preflight.md).
-Values are nonsecret placeholders. Never enable shell tracing or put API keys in
-these commands. Use an approved current Google Cloud CLI; it is not installed here.
+Values are nonsecret placeholders. Current preparation/discovery status and approval order
+are in [gcp_preparation_480.md](gcp_preparation_480.md). Never enable shell tracing or put API keys in
+these commands. SDK 588.0.0 is installed outside PATH at `$HOME/google-cloud-sdk/bin/gcloud`; use its explicit path or an approved local PATH setup.
 Flag spellings were checked against the current
 [gcloud run deploy reference](https://docs.cloud.google.com/sdk/gcloud/reference/run/deploy).
 No cloud-side syntax/policy validation has been executed.
@@ -11,14 +19,16 @@ The [Step 4.7b approval checklist](deployment_approval_checklist.md) records unr
 public grading approval, accepted anonymous-session limits, rights, model and spending gates. Do not execute these
 blocks until the relevant decisions and named actions are explicitly approved.
 
-## 1. Approved identifiers (no secrets)
+## 1. Proposed identifiers — unapproved placeholders (no secrets)
 
 ```bash
-export VERIDEX_PROJECT_ID='REPLACE_WITH_APPROVED_PROJECT_ID'
+export VERIDEX_PROJECT_ID='zeta-store-511505-i7'
 export VERIDEX_BILLING_ACCOUNT='REPLACE_WITH_APPROVED_BILLING_ACCOUNT_ID'
+export VERIDEX_PROJECT_NUMBER='REPLACE_WITH_PROJECT_NUMBER'
+export VERIDEX_OPERATOR_ACCOUNT='REPLACE_WITH_APPROVED_OPERATOR_ACCOUNT'
 export VERIDEX_REGION='us-west1'
 export VERIDEX_REPOSITORY='veridex'
-export VERIDEX_SERVICE='veridex'
+export VERIDEX_SERVICE='veridex-staging'
 export VERIDEX_RUNTIME_SA="veridex-runtime@${VERIDEX_PROJECT_ID}.iam.gserviceaccount.com"
 export VERIDEX_DEPLOYER_MEMBER='user:REPLACE_WITH_APPROVED_DEPLOYER'
 export VERIDEX_PUBLISHER_MEMBER='user:REPLACE_WITH_APPROVED_PUBLISHER'
@@ -27,7 +37,7 @@ export VERIDEX_OPENAI_SECRET_VERSION='REPLACE_WITH_ENABLED_NUMERIC_VERSION'
 export VERIDEX_TAVILY_SECRET_VERSION='REPLACE_WITH_ENABLED_NUMERIC_VERSION'
 export VERIDEX_OPENAI_MODEL='REPLACE_WITH_APPROVED_GENERATION_MODEL'
 export VERIDEX_EMBEDDING_MODEL='text-embedding-3-small'
-export VERIDEX_IMAGE_TAG="${VERIDEX_REGION}-docker.pkg.dev/${VERIDEX_PROJECT_ID}/${VERIDEX_REPOSITORY}/veridex:phase04-reviewed"
+export VERIDEX_IMAGE_TAG="${VERIDEX_REGION}-docker.pkg.dev/${VERIDEX_PROJECT_ID}/${VERIDEX_REPOSITORY}/veridex:phase04-v2-47h"
 ```
 
 Confirm the CLI active identity/project without retrieving secret payloads. Use
@@ -48,7 +58,7 @@ gcloud billing projects link "$VERIDEX_PROJECT_ID" --billing-account="$VERIDEX_B
 ```
 
 Before further provisioning, the billing operator creates the approved project
-alerts-only $10 monthly budget in the console, thresholds 50/90/100% and forecast
+alerts-only $5 monthly budget in the console, thresholds 50/80/100% and forecast
 100%, with approved notification recipients. Separately review a $5 monthly Cloud
 Run spend cap (single project + Cloud Run service billing category), if eligible.
 Do not conflate the two or count either as an external-provider spending limit.
@@ -82,26 +92,40 @@ when infrastructure already exists.
 
 ## 3. Image publisher: only after explicit PDF/remote-copy approval
 
-Use the already verified image after rechecking its identity and bundle. Step 4.7d verified current source with 32 Docker TCP tests. The image is still
-local/internal: rights and notices/delivery must pass before publication. Any
+Use the already verified image after rechecking its identity and bundle. Step 4.7h verified Corpus v2 with 33 Docker TCP tests and packaged attribution. The image is still
+local-only: explicit approval of remote image publication is required. Any
 corpus/notices/image change requires a new build, verification and identity review. A local image ID is not the registry manifest digest.
 
 ```bash
-docker image inspect veridex:phase04-47d --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Config.User}}'
-gcloud auth configure-docker "${VERIDEX_REGION}-docker.pkg.dev"
-docker tag veridex:phase04-47d "$VERIDEX_IMAGE_TAG"
-docker push "$VERIDEX_IMAGE_TAG"
-gcloud artifacts docker images describe "$VERIDEX_IMAGE_TAG" --project="$VERIDEX_PROJECT_ID" --format='value(image_summary.digest)'
+publish_approved_v2_image() {
+  if [ "${VERIDEX_PUBLICATION_APPROVAL:-}" != "APPROVED:${VERIDEX_PROJECT_ID}:${VERIDEX_REPOSITORY}" ]; then
+    printf '%s\n' 'Image publication has not been explicitly approved.' >&2
+    return 1
+  fi
+  local observed
+  observed=$(docker image inspect veridex:phase04-v2-local --format '{{.Id}}') || return 1
+  if [ "$observed" != 'sha256:38c2bb0aed856da0fa8724e4ffc0dd27cf4c461b69b97b8822d5b854ee544289' ]; then
+    printf '%s\n' 'Local image differs from the reviewed v2 release.' >&2
+    return 1
+  fi
+  gcloud auth configure-docker "${VERIDEX_REGION}-docker.pkg.dev" || return 1
+  docker tag "$observed" "$VERIDEX_IMAGE_TAG" || return 1
+  docker push "$VERIDEX_IMAGE_TAG" || return 1
+  gcloud artifacts docker images describe "$VERIDEX_IMAGE_TAG" \
+    --project="$VERIDEX_PROJECT_ID" --format='value(image_summary.digest)'
+}
+# Do not set the approval marker or invoke this function during preparation.
+# Only after reviewed publication and manifest-digest inspection:
 export VERIDEX_IMAGE_DIGEST='REPLACE_WITH_REVIEWED_REGISTRY_SHA256_DIGEST'
 export VERIDEX_IMAGE="${VERIDEX_REGION}-docker.pkg.dev/${VERIDEX_PROJECT_ID}/${VERIDEX_REPOSITORY}/veridex@${VERIDEX_IMAGE_DIGEST}"
 ```
 
-The locally verified Step 4.7d image ID is
-`sha256:6ac318560e55e8a37a4f7145ff38a4300ec33d9b08f02f836bb0875b476b6d07`.
+The locally verified Step 4.7h image ID is
+`sha256:38c2bb0aed856da0fa8724e4ffc0dd27cf4c461b69b97b8822d5b854ee544289`.
 If inspect differs, stop and establish the reviewed image; don't silently push it.
 The bundle digest remains
-`6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8`.
-The approved original/recovered indexes and local bundle remain untouched.
+`7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
+The original/recovered/v1 and v2 source artifacts remain untouched.
 Reusing this image is conditional on completed rights/notices review. If that
 review requires new attribution files or corpus changes, stop: authorize and verify
 a new local image separately, then replace this identity pin through review.
@@ -137,7 +161,7 @@ Retire unnecessary bootstrap grants after successful creation/policy audit.
 ## 5. Read-only audit and separately approved trusted invoker
 
 ```bash
-gcloud run services describe "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format=yaml
+gcloud run services describe "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format='yaml(metadata.name,status.url,status.latestReadyRevisionName,spec.template.spec.serviceAccountName,spec.template.spec.timeoutSeconds,spec.template.spec.containerConcurrency,spec.template.spec.containers.image,spec.template.spec.containers.ports,spec.template.spec.containers.resources,spec.template.spec.containers.startupProbe)'
 gcloud run services get-iam-policy "$VERIDEX_SERVICE" --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format=json
 gcloud projects get-iam-policy "$VERIDEX_PROJECT_ID" --format=json
 gcloud secrets versions list veridex-openai-api-key --project="$VERIDEX_PROJECT_ID"
@@ -146,7 +170,10 @@ gcloud secrets get-iam-policy veridex-openai-api-key --project="$VERIDEX_PROJECT
 gcloud secrets get-iam-policy veridex-tavily-api-key --project="$VERIDEX_PROJECT_ID"
 ```
 
-Verify pinned image/secrets, IAM check enabled, no public grant, runtime SA, resource
+The selected service description deliberately omits env values and arbitrary annotations.
+Use the Console or a specifically reviewed metadata-only query for secret references,
+scaling/ingress/IAM-check annotations and model/limit settings; never print literal
+secret values from an existing service. Verify pinned image/secrets, IAM check enabled, no public grant, runtime SA, resource
 allocation, probe, scaling and API limits. Inspect metadata only; do not access
 secret payloads. Audit inherited project/ancestor IAM and any group membership too;
 absence of a service-level public binding alone is insufficient. When reusing an
@@ -222,3 +249,59 @@ The query embedding model must remain `text-embedding-3-small` to match v2.
 This model setting does not authorize paid queries or cloud mutations. Keep public
 admission separate from provisioning/private deployment; do not run these blocks
 until project, identities, secrets, provider allowance and expiry are approved.
+
+## Step 4.8.0 gates and $5 alert budget — PREPARED, NOT EXECUTED
+
+Every create, services-enable, IAM-binding, billing-link, budget-create, deploy,
+Docker credential configuration, image tag/push and public-access command above is
+a mutation or publication action requiring its own stage approval. Neither defining
+variables nor confirming an image authorizes these actions. Do not run the blocks
+as a batch. No resource/project name is approved yet.
+
+The budget amount is confirmed, but creating the budget is not authorized. After
+project/billing/notification selection and approval, the billing operator may use
+the Console or this reviewed alerts-only command. Gross usage excluding credits is
+proposed for conservative alerts; confirm that basis and recipient delivery first.
+Use the approved project ID, not the shell's active project. The billing account
+must use USD; stop on a different currency. This requires billingbudgets API setup
+for the chosen administrative/quota project, or use the Console instead.
+
+```bash
+gcloud billing budgets create \
+  --billing-account="$VERIDEX_BILLING_ACCOUNT" \
+  --project="$VERIDEX_PROJECT_ID" \
+  --display-name='Veridex coursework monthly USD 5 alerts' \
+  --budget-amount=5USD --calendar-period=month \
+  --filter-projects="projects/${VERIDEX_PROJECT_ID}" \
+  --credit-types-treatment=exclude-all-credits \
+  --threshold-rule=percent=0.5,basis=current-spend \
+  --threshold-rule=percent=0.8,basis=current-spend \
+  --threshold-rule=percent=1.0,basis=current-spend \
+  --threshold-rule=percent=1.0,basis=forecasted-spend
+```
+
+This does not configure a spend cap or authorize provider spending. Default IAM
+notification recipients must be checked in the Console; add approved email
+notification channels only if needed, with separate approval. Cloud Run spend-cap
+eligibility, available billing permissions and first-party account status remain
+unverified. Do not create or lift a cap by inference from this alert budget.
+
+### Post-grading shutdown — MUTATIONS, NOT EXECUTED
+
+Approve the end date/operator separately. First revoke the explicit public binding
+and inspect inherited access. Removing it does not revoke trusted-invoker access
+or terminate in-flight turns. Then, if service deletion is specifically approved,
+delete the single service after recording necessary release/measurement metadata.
+This is not project deletion or billing disablement. Registry storage and active
+secret-version charges persist until separately reviewed cleanup.
+
+```bash
+gcloud run services remove-iam-policy-binding "$VERIDEX_SERVICE" \
+  --member=allUsers --role=roles/run.invoker \
+  --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID"
+gcloud run services get-iam-policy "$VERIDEX_SERVICE" \
+  --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID" --format=json
+# DESTRUCTIVE: only after explicit approval to delete this named service.
+gcloud run services delete "$VERIDEX_SERVICE" \
+  --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID"
+```
