@@ -107,3 +107,11 @@ UID-10001-owned with 0700 directories and writable files. All host original,
 recovered, and bundle fingerprints remain unchanged. Provider calls were zero.
 The immutable bundle retains its historical Linux-unverified metadata; this
 separate image verification records the successful Linux test without rewriting it.
+
+
+## Current release candidate (Step 4.7d)
+
+The Step 4.5 measurements above are historical. The current-code local candidate is
+`veridex:phase04-47d`; its identity, 32 offline TCP passes, native index checks,
+non-root production startup and shutdown/resource results are recorded in
+[release_readiness_47d.md](release_readiness_47d.md). It remains local/internal.

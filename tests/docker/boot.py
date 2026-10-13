@@ -23,6 +23,7 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 from langchain_core.messages import AIMessage
 
+from veridex.agent import mcp_service
 from veridex.agent.mcp_service import open_mcp_agent_service
 from veridex.api import app as api
 from veridex.config import settings
@@ -49,6 +50,8 @@ state = {
     "started": time.time(),
     "index_separate": index != BUNDLE / "chroma",
 }
+original_clock = mcp_service.monotonic
+mcp_service.monotonic = lambda: original_clock() + state.get("clock_offset", 0)
 service = None
 application = None
 
@@ -108,6 +111,7 @@ def trace_summary(trace, query, session):
         ],
         "results": results,
         "status": trace["status"],
+        "error": trace["error"],
         "response": trace["response"],
     }
 
@@ -141,6 +145,8 @@ class Model:
         evidence = ("search_evidence", {"query": "RAG", "document_id": "rag_2020", "top_k": 3})
         web = ("search_web", {"query": "offline-rag"})
         plans = {
+            "tool-budget": [[("list_documents", {})] * 9],
+            "model-budget": [[("list_documents", {})]] * 8,
             "evidence": [[evidence]],
             "web": [[web]],
             "workspace": [[("list_documents", {})]],
@@ -250,6 +256,27 @@ api.app = application
 
 @application.get("/__verification")
 async def snapshot():
+    state["limits"] = {
+        key: getattr(settings, key)
+        for key in (
+            "api_max_active_requests",
+            "api_max_waiting_requests",
+            "agent_max_tool_calls",
+            "agent_max_model_calls",
+            "agent_max_completion_tokens",
+            "agent_history_turns",
+            "agent_max_sessions",
+            "agent_session_ttl_seconds",
+            "provider_max_retries",
+            "provider_timeout_seconds",
+        )
+    }
+    if service is not None:
+        state["retained_sessions"] = sorted(service._session_locks)
+        state["checkpoint_counts"] = {
+            key: len(list(service.checkpointer.list({"configurable": {"thread_id": key}})))
+            for key in service._session_locks
+        }
     state["active"] = application.state.admission.active
     state["waiting"] = application.state.admission.waiting
     current = Path("/sys/fs/cgroup/memory.current")
@@ -280,6 +307,8 @@ async def control(body: dict):
         "queue": "api_queue_timeout_seconds",
         "active": "api_max_active_requests",
         "waiting": "api_max_waiting_requests",
+        "models": "agent_max_model_calls",
+        "sessions": "agent_max_sessions",
     }
     for key, value in body.items():
         if key in mapping:
@@ -290,6 +319,8 @@ async def control(body: dict):
                 application.state.admission._semaphore = asyncio.Semaphore(value)
         if key == "unavailable":
             application.state.shutting_down = value
+        if key == "advance_ttl":
+            state["clock_offset"] = state.get("clock_offset", 0) + value
     return {"configured": True}
 
 

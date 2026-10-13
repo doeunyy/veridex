@@ -78,6 +78,11 @@ def control(client, **values):
 
 
 def test_health_ready_and_schema(client):
+    limits = client.get("/__verification").json()["limits"]
+    assert (limits["api_max_active_requests"], limits["api_max_waiting_requests"]) == (1, 0)
+    assert (limits["agent_max_tool_calls"], limits["agent_max_model_calls"]) == (8, 6)
+    assert limits["agent_max_completion_tokens"] == 4096
+    assert (limits["provider_timeout_seconds"], limits["provider_max_retries"]) == (30, 0)
     assert client.get("/health").json() == {"status": "ok"}
     assert client.get("/ready").json() == {"status": "ready"}
     response = chat(client, "greeting", "greeting")
@@ -296,3 +301,60 @@ def test_invalid_tcp_header_is_safe(client):
         response = connection.recv(4096)
     assert b"400 Bad Request" in response
     assert b"PRIVATE-SENTINEL" not in response
+
+
+def test_tool_and_model_budgets_inside_container(client):
+    assert chat(client, "tool-budget", "tool-budget").status_code == 200
+    trace = client.get("/__verification").json()["traces"][-1]
+    assert trace["error"] == "tool_call_limit"
+    assert len(trace["calls"]) == 9
+    assert all(not result["completed"] for result in trace["results"])
+    assert "No final answer is verified" in trace["response"]
+    assert client.get("/__verification").json()["sessions"]["tool-budget"]["balanced"]
+    control(client, models=2)
+    try:
+        assert chat(client, "model-budget", "model-budget").status_code == 200
+        trace = client.get("/__verification").json()["traces"][-1]
+        assert trace["error"] == "model_call_limit"
+        assert sum(result["completed"] for result in trace["results"]) == 2
+    finally:
+        control(client, models=6)
+    assert chat(client, "greeting", "tool-budget").json() == {"response": "Hello offline."}
+
+
+def test_default_concurrency_rejects_waiting_work(client):
+    control(client, active=1, waiting=0)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(chat, client, "brief-model", "default-capacity")
+        wait(client, lambda s: s["active"] == 1)
+        response = chat(client, "greeting", "default-rejected")
+        assert response.status_code == 429 and response.json() == {"detail": "Too many requests."}
+        assert first.result().status_code == 200
+
+
+def test_completed_turn_retention_and_checkpoint_compaction(client):
+    for i in range(7):
+        assert chat(client, f"retain-{i}", "retention").status_code == 200
+    state = client.get("/__verification").json()
+    assert state["sessions"]["retention"]["humans"] == [f"retain-{i}" for i in range(1, 7)]
+    assert state["checkpoint_counts"]["retention"] == 1
+    assert chat(client, "recall", "retention").json() == {
+        "response": "History: " + json.dumps([f"retain-{i}" for i in range(1, 7)])
+    }
+
+
+def test_session_capacity_and_idle_expiry(client):
+    retained = client.get("/__verification").json()["retained_sessions"]
+    control(client, sessions=len(retained))
+    try:
+        response = chat(client, "greeting", "no-session-slot")
+        assert response.status_code == 429
+        assert response.json() == {"detail": "Session capacity exhausted."}
+        assert client.get("/__verification").json()["retained_sessions"] == retained
+        control(client, advance_ttl=1801)
+        assert chat(client, "greeting", "after-expiry").status_code == 200
+        state = client.get("/__verification").json()
+        assert state["retained_sessions"] == ["after-expiry"]
+        assert state["checkpoint_counts"] == {"after-expiry": 1}
+    finally:
+        control(client, sessions=128)
