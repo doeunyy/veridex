@@ -15,6 +15,7 @@ from veridex.api.lifecycle import agent_lifespan
 from veridex.api.limits import Admission, ChatLimitsMiddleware
 from veridex.api.schemas import ChatRequest, ChatResponse, HealthResponse, ReadyResponse
 from veridex.config import Settings, settings
+from veridex.observability import execution, turn_context
 
 
 class AsyncAgentService(Protocol):
@@ -94,7 +95,8 @@ def create_app(
         if application.state.shutting_down:
             raise HTTPException(status_code=503, detail="Agent service is unavailable.")
         try:
-            response = await service.achat(query=body.query, session_id=body.session_id)
+            with turn_context(), execution("chat"):
+                response = await service.achat(query=body.query, session_id=body.session_id)
             if attribution is not None:
                 http_response.headers["Link"] = '</attribution>; rel="describedby"'
             return ChatResponse(response=response)

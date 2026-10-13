@@ -8,6 +8,7 @@ from veridex.agent.prompts import AGENT_SYSTEM_PROMPT
 from veridex.agent.state import AgentState
 from veridex.agent.tools import search_evidence
 from veridex.config import settings
+from veridex.observability import execution
 
 
 def build_agent_graph(
@@ -43,7 +44,8 @@ def build_agent_graph(
             messages = [SystemMessage(content=system_prompt), *state["messages"]]
             if before_model is not None:
                 before_model(messages)
-            return {"messages": [await bound_model.ainvoke(messages)]}
+            with execution("model"):
+                return {"messages": [await bound_model.ainvoke(messages)]}
     else:
 
         def agent_node(state: AgentState):

@@ -24,6 +24,7 @@ from veridex.agent.graph import build_agent_graph
 from veridex.agent.prompts import MCP_AGENT_SYSTEM_PROMPT
 from veridex.config import Settings, settings
 from veridex.mcp.client import MCPClientError, ToolRegistry, connect_servers
+from veridex.observability import observed
 
 _REQUIRED_TOOLS = {"search_evidence", "search_web", "list_documents", "read_document"}
 
@@ -181,6 +182,7 @@ class MCPAgentService:
             return (await self.graph.aget_state(config)).values
         return result
 
+    @observed("agent")
     async def achat_with_trace(self, query: str, session_id: str) -> dict:
         if not isinstance(query, str) or not query.strip():
             raise ValueError("Query cannot be empty.")
