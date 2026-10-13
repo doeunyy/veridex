@@ -18,9 +18,10 @@ Implemented controls:
   a 30-second admission deadline included in the HTTP 180-second budget.
 - Agent 120s, recursion 12; eight tool calls and six generation requests per turn.
   An over-budget parallel tool round is rejected before any of its calls.
-- Generation `max_completion_tokens=4096`, provider timeout 30s, retries 0. Embedding
-  clients use timeout 30s/retries 0, forwarded to the scoped Evidence child. Tavily
-  retains its 20-second outer deadline and single SDK POST with no app retry loop.
+- Generation `max_completion_tokens=4096`, provider timeout 30s by default, retries 0.
+  Embedding clients use the same timeout/retries 0, forwarded to the scoped Evidence child.
+  `PROVIDER_TIMEOUT_SECONDS` (maximum 45) sets both; the serving Cloud Run revision uses 45s.
+  Tavily retains its 20-second outer deadline and single SDK POST with no app retry loop.
 - Serialized messages including system context must fit 64,000 characters before
   model invocation. This conservative cap is not an exact provider token count.
 - At most 128 retained sessions. Lazy 30-minute idle expiry deletes checkpoint and
