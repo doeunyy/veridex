@@ -91,6 +91,8 @@ def trace_summary(trace, query, session):
                         "chunk_id": p["chunk_id"],
                         "paper_id": p["document_id"],
                         "page": p["page"],
+                        "title": p["title"],
+                        "source_url": p["source_url"],
                         "distance": p["distance"],
                     }
                     for p in data.get("passages", [])
@@ -142,7 +144,10 @@ class Model:
         query = messages[last].content
         current = messages[last + 1 :]
         rounds = sum(m.type == "ai" for m in current)
-        evidence = ("search_evidence", {"query": "RAG", "document_id": "rag_2020", "top_k": 3})
+        evidence = (
+            "search_evidence",
+            {"query": "RAG", "document_id": "rag_long_context_2024", "top_k": 3},
+        )
         web = ("search_web", {"query": "offline-rag"})
         plans = {
             "tool-budget": [[("list_documents", {})] * 9],
@@ -156,7 +161,7 @@ class Model:
                     (
                         "read_document",
                         {
-                            "document_id": "rag_2020.pdf",
+                            "document_id": "rag_long_context_2024.pdf",
                             "start_page": 3,
                             "end_page": 3,
                             "max_chars": 1000,

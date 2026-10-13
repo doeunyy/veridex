@@ -119,8 +119,8 @@ def test_real_mcp_traces(client, query, names):
     evidence = [r for r in trace["results"] if r["name"] == "search_evidence"]
     if evidence and query != "insufficient":
         first = evidence[0]["passages"][0]
-        assert first["chunk_id"] == "rag_2020_p3_c00012"
-        assert first["paper_id"] == "rag_2020" and first["page"] == 3
+        assert first["chunk_id"] == "rag_long_context_2024_p1_c00000"
+        assert first["paper_id"] == "rag_long_context_2024" and first["page"] == 1
         assert abs(first["distance"]) < 1e-6
     if query == "insufficient":
         assert evidence[0]["passages"] == []
@@ -129,9 +129,11 @@ def test_real_mcp_traces(client, query, names):
         if result["name"] == "search_web" and result["status"] == "success":
             assert result["urls"] == ["https://offline.example.test/rag"]
         if result["name"] == "list_documents":
-            assert len(result["documents"]) == 5 and "rag_2020.pdf" in result["documents"]
+            assert (
+                len(result["documents"]) == 5 and "rag_long_context_2024.pdf" in result["documents"]
+            )
         if result["name"] == "read_document" and result["status"] == "success":
-            assert result["paper_id"] == "rag_2020" and result["pages"] == [3]
+            assert result["paper_id"] == "rag_long_context_2024" and result["pages"] == [3]
             assert result["page_characters"] == [1000]
 
 
@@ -358,3 +360,36 @@ def test_session_capacity_and_idle_expiry(client):
         assert state["checkpoint_counts"] == {"after-expiry": 1}
     finally:
         control(client, sessions=128)
+
+
+def test_v2_notice_delivery_and_citation_metadata(client):
+    notice = client.get("/attribution")
+    assert notice.status_code == 200
+    data = notice.json()
+    assert data["corpus_version"] == "veridex-corpus-v2"
+    assert {d["id"] for d in data["documents"]} == {
+        "rag_long_context_2024",
+        "react_2022",
+        "self_rag_2023",
+        "netmhcpan_2020",
+        "mixmhc2pred_2023",
+    }
+    acl = next(d for d in data["documents"] if d["id"] == "rag_long_context_2024")
+    assert acl["authors"] == [
+        "Zhuowan Li",
+        "Cheng Li",
+        "Mingyang Zhang",
+        "Qiaozhu Mei",
+        "Michael Bendersky",
+    ]
+    assert acl["license_id"] == "CC-BY-4.0"
+    assert acl["sha256"] == "90407fd3c2bcf11d52868f0aaee3d39d6a9919351c89636555a641950531a070"
+    assert any("noncommercial" in value for value in data["limitations"])
+    assert client.post("/attribution", json={}).status_code == 405
+    response = chat(client, "evidence", "v2-citation")
+    assert set(response.json()) == {"response"}
+    assert response.headers["link"] == '</attribution>; rel="describedby"'
+    passage = client.get("/__verification").json()["traces"][-1]["results"][0]["passages"][0]
+    assert passage["paper_id"] == acl["id"]
+    assert passage["title"] == acl["title"]
+    assert passage["source_url"] == acl["source_url"]

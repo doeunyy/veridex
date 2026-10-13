@@ -33,7 +33,7 @@ def install(role):
                     )
                 ) as db:
                     vector = db.execute(
-                        "SELECT vector FROM embeddings_queue WHERE id='rag_2020_p3_c00012'"
+                        "SELECT vector FROM embeddings_queue WHERE id='rag_long_context_2024_p1_c00000'"
                     ).fetchone()[0]
                 return list(struct.unpack("<1536f", vector))
 
