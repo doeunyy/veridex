@@ -48,9 +48,9 @@ In addition to body/field/admission/deadline/recursion/shutdown controls:
 
 No aggregate durable rate/spend ceiling, verified ownership or external-provider
 billing guarantee is implemented. Provider token overhead, embedding splitting,
-optional retries, continuous traffic and restarts matter. The former local Docker
-image does not include these changes: a new local build and offline container
-verification are required before its digest can be approved for upload.
+optional retries, continuous traffic and restarts matter. Step 4.7d has now verified the changed code in a new local image with 32 Docker
+TCP tests. See [release readiness](release_readiness_47d.md); rights/notices and
+publication gates remain. Any further packaging change needs new image verification.
 
 ## Corpus rights and attribution
 
@@ -129,7 +129,7 @@ Old indexes/bundles stay intact; no API calls or rebuild are approved by this pl
 | Resolved assignment fact | Public example/us-west1/two-turn/recycling requirements | Supplied reviewed-handout findings; adopt anonymous grading recommendation |
 | Factual blocker | Exact arXiv-file license scope, historical model attestation, project policies/quotas | Still unresolved; approval cannot convert assumptions into verification |
 | Rights blocker | RAG downstream permission; attribution/NC and third-party scope conditions | Resolve or approve a rights-compliant separate corpus workflow |
-| Technical follow-up | New image/offline Docker checks, native Cloud Run CPU/memory/startup, live providers | Local code tests now; container rebuild before upload; native/live only after authorization |
+| Technical follow-up | Local image/Docker checks passed in 4.7d; native Cloud Run and live providers pending | Local code tests now; container rebuild before upload; native/live only after authorization |
 | User approval | Anonymous session limitations, rights-compliant corpus, provenance acceptance/rebuild | Explicit choices required; no mandatory grading authentication |
 | User approval | Project/billing/identities/secrets/model/budget/expiry; publication/deployment | Placeholders remain; no cloud action authorized |
 | Prohibited now | GCP/IAM/billing mutation, image push, paid calls, corpus writes, Git stage/commit/push, PROCESS_LOG edits | None performed |
@@ -142,7 +142,7 @@ publication and private deployment actions. Native health/resources and a separa
 approved counted live turn precede the explicit public-admission grant.
 
 Cloud deployment is not yet ready for approval: access design and local safeguards
-are prepared, but artifact rights/provenance decisions, new image verification and
+are prepared, but artifact rights/provenance decisions, attribution release packaging and
 concrete cloud/public spending approvals remain. README, three diagrams and
 PROCESS_LOG final narrative are deferred to Step 4.11; none was modified here.
 
@@ -177,3 +177,17 @@ corpus write, dependency/production MCP-server change, Git staging/commit/push,
 README/PROCESS_LOG/development-notes change was performed. The existing image and
 prior 28 Docker E2E passes are historical evidence, not verification of this changed
 source. A new offline image build/E2E run remains before publication approval.
+
+
+## Step 4.7d current release gate
+
+[release_readiness_47d.md](release_readiness_47d.md) records the exact new image,
+32 Docker TCP passes, 400 ordinary tests, non-root production startup at 1 CPU/2 GiB,
+101/104-second emulated cold starts and 3.00/5.67-second idle/active shutdowns.
+RAG downstream rights remain the priority blocker; four other papers have conditional
+retention/license evidence. Attribution is not yet packaged for image/service
+recipients. Historical model identity stays unverified: choose explicit coursework
+uncertainty acceptance or a separately approved coherent new index. Proposed cloud
+timeout is now 300s because Cloud Run includes startup, with native tuning required.
+All public/provider/cloud/registry action gates remain unapproved. No PDF downloads,
+corpus changes, provider API calls, GCP changes or image pushes occurred in 4.7d.

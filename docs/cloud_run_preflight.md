@@ -17,7 +17,7 @@ subsequent configuration-history investigation and conditional access/corpus pat
 | Resources | 1 vCPU / 2 GiB, subject to native measurements; startup CPU boost enabled |
 | Scaling | Service-level minimum 0, maximum 1; revision maximum 1 as an additional safeguard; no session affinity |
 | Concurrency | Cloud Run 1; application active requests 1, waiting requests 0 |
-| Deadline | Cloud Run 240 seconds; existing ASGI deadline 180 seconds, Agent turn 120 seconds, provider/MCP request 45 seconds |
+| Deadline | Proposed Cloud Run 300 seconds; ASGI 180 seconds, Agent 120 seconds, provider 30 seconds / MCP 45 seconds |
 | Startup probe | HTTP/1 GET `/ready`, port 8080, initial delay 0, period 10 seconds, timeout 3 seconds, failure threshold 24 |
 | Liveness | Initially omit a restart-triggering liveness probe; `/health` remains available for authenticated diagnostics. Add only after measuring event-loop responsiveness under load. |
 | Access | Grading target: internet-reachable unauthenticated invocation, pending explicit approval of public admission and anonymous-session limitations. Stage IAM-private first; public grant is a separate gate. |
@@ -336,3 +336,13 @@ reported accidental live-test connection attempt, which failed at DNS and was no
 retried. That test is now explicitly opt-in; no successful provider validation or
 cloud operation occurred. This step changed application code and therefore needs
 new local Docker verification before any approved image publication.
+
+
+## Step 4.7d release verification and timeout revision
+
+The [local release report](release_readiness_47d.md) supersedes the pending Docker
+verification above: new current-code image, 32 TCP tests and non-root network-disabled
+production startup passed. Proposed Cloud Run timeout increases to 300s to allow
+measured emulated cold startup plus HTTP budget; native performance remains unmeasured.
+No cloud settings were changed. Rights/notices, model uncertainty acceptance and
+named publication/deployment/public-access approvals remain gates.

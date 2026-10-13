@@ -82,22 +82,22 @@ when infrastructure already exists.
 
 ## 3. Image publisher: only after explicit PDF/remote-copy approval
 
-Use the already verified image after rechecking its identity and bundle. Step 4.7c changed local application code: rebuild with the named RAG context and
-rerun offline Linux/container checks before approving a new image. The historical
-Step 4.6 tag is not evidence for the current source. A local image ID is not the registry manifest digest.
+Use the already verified image after rechecking its identity and bundle. Step 4.7d verified current source with 32 Docker TCP tests. The image is still
+local/internal: rights and notices/delivery must pass before publication. Any
+corpus/notices/image change requires a new build, verification and identity review. A local image ID is not the registry manifest digest.
 
 ```bash
-docker image inspect veridex:phase04-local --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Config.User}}'
+docker image inspect veridex:phase04-47d --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Config.User}}'
 gcloud auth configure-docker "${VERIDEX_REGION}-docker.pkg.dev"
-docker tag veridex:phase04-local "$VERIDEX_IMAGE_TAG"
+docker tag veridex:phase04-47d "$VERIDEX_IMAGE_TAG"
 docker push "$VERIDEX_IMAGE_TAG"
 gcloud artifacts docker images describe "$VERIDEX_IMAGE_TAG" --project="$VERIDEX_PROJECT_ID" --format='value(image_summary.digest)'
 export VERIDEX_IMAGE_DIGEST='REPLACE_WITH_REVIEWED_REGISTRY_SHA256_DIGEST'
 export VERIDEX_IMAGE="${VERIDEX_REGION}-docker.pkg.dev/${VERIDEX_PROJECT_ID}/${VERIDEX_REPOSITORY}/veridex@${VERIDEX_IMAGE_DIGEST}"
 ```
 
-The locally recorded Step 4.6 image ID is
-`sha256:248852fadfeb86354fabf542b41ae32cb932bfb9a213ed2db754646589d1a96d`.
+The locally verified Step 4.7d image ID is
+`sha256:6ac318560e55e8a37a4f7145ff38a4300ec33d9b08f02f836bb0875b476b6d07`.
 If inspect differs, stop and establish the reviewed image; don't silently push it.
 The bundle digest remains
 `6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8`.
@@ -118,7 +118,7 @@ gcloud run deploy "$VERIDEX_SERVICE" \
   --image="$VERIDEX_IMAGE" --service-account="$VERIDEX_RUNTIME_SA" \
   --execution-environment=gen2 --port=8080 --cpu=1 --memory=2Gi \
   --concurrency=1 --min=0 --max=1 --max-instances=1 \
-  --timeout=240s --cpu-throttling --cpu-boost --no-session-affinity \
+  --timeout=300s --cpu-throttling --cpu-boost --no-session-affinity \
   --ingress=all --no-allow-unauthenticated --invoker-iam-check \
   --startup-probe='httpGet.path=/ready,httpGet.port=8080,initialDelaySeconds=0,periodSeconds=10,timeoutSeconds=3,failureThreshold=24' \
   --set-env-vars="APP_ENV=production,LOG_LEVEL=INFO,API_MAX_REQUEST_BODY_BYTES=65536,API_MAX_ACTIVE_REQUESTS=1,API_MAX_WAITING_REQUESTS=0,API_REQUEST_TIMEOUT_SECONDS=180,API_QUEUE_TIMEOUT_SECONDS=30,OPENAI_MODEL=${VERIDEX_OPENAI_MODEL},OPENAI_EMBEDDING_MODEL=${VERIDEX_EMBEDDING_MODEL}" \
