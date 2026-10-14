@@ -1,0 +1,44 @@
+{
+  "documents": [
+    {
+      "id": "rag_2020",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "domain": "nlp",
+      "year": 2020,
+      "filename": "rag_2020.pdf",
+      "source_url": "https://arxiv.org/abs/2005.11401"
+    },
+    {
+      "id": "react_2022",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "domain": "agentic_ai",
+      "year": 2022,
+      "filename": "react_2022.pdf",
+      "source_url": "https://arxiv.org/abs/2210.03629"
+    },
+    {
+      "id": "self_rag_2023",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "domain": "rag",
+      "year": 2023,
+      "filename": "self_rag_2023.pdf",
+      "source_url": "https://arxiv.org/abs/2310.11511"
+    },
+    {
+      "id": "netmhcpan_2020",
+      "title": "NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen presentation by concurrent motif deconvolution and integration of MS MHC eluted ligand data",
+      "domain": "bioinformatics",
+      "year": 2020,
+      "filename": "netmhcpan_2020.pdf",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7319546/"
+    },
+    {
+      "id": "mixmhc2pred_2023",
+      "title": "Machine learning predictions of MHC-II specificities reveal alternative binding mode of class II epitopes",
+      "domain": "bioinformatics",
+      "year": 2023,
+      "filename": "mixmhc2pred_2023.pdf",
+      "source_url": "https://www.sciencedirect.com/science/article/pii/S1074761323001292"
+    }
+  ]
+}

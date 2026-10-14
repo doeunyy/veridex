@@ -132,6 +132,8 @@ pip-delete-this-directory.txt
 # ------------------------------------------------------------
 data/papers/
 data/index/
+.artifacts/
+.docker-artifacts/
 data/chroma/
 chroma_db/
 chroma.sqlite3
@@ -172,6 +174,8 @@ activemq-data/
 # ------------------------------------------------------------
 docs/_build/
 /site
+# Personal development notes
+/docs/development_notes.md
 
 # ------------------------------------------------------------
 # 14. Miscellaneous Generated Files

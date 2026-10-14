@@ -1,0 +1,50 @@
+[project]
+name = "veridex"
+version = "0.1.0"
+description = "Agentic evidence retrieval and verification system"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "chromadb>=1.5.9",
+    "fastapi>=0.143.0",
+    "fastmcp>=3.2.2,<4",
+    "langchain>=1.4.4",
+    "langchain-chroma>=1.1.0",
+    "langchain-community>=0.4.2",
+    "langchain-mcp-adapters>=0.3.1,<0.4",
+    "langchain-openai>=1.7.0",
+    "langchain-text-splitters>=1.1.3",
+    "langgraph>=1.2.14",
+    "mcp>=1.24.0,<2",
+    "pydantic-settings>=2.15.0",
+    "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.4",
+    "tavily-python>=0.7,<1",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests requiring local corpus, vector index, or external API",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veridex"]

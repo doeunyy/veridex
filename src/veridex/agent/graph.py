@@ -1,0 +1,82 @@
+from langchain_core.messages import SystemMessage
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
+
+from veridex.agent.prompts import AGENT_SYSTEM_PROMPT
+from veridex.agent.state import AgentState
+from veridex.agent.tools import search_evidence
+from veridex.config import settings
+from veridex.observability import execution
+
+
+def build_agent_graph(
+    tools=None,
+    model=None,
+    checkpointer=None,
+    *,
+    async_mode=False,
+    system_prompt=AGENT_SYSTEM_PROMPT,
+    handle_tool_errors=True,
+    before_model=None,
+    before_tools=None,
+):
+    """Build a stateful LangGraph tool-calling agent."""
+    if tools is None:
+        tools = [search_evidence]
+
+    if model is None:
+        if not settings.openai_api_key:
+            raise ValueError("OPENAI_API_KEY is not configured.")
+
+        model = ChatOpenAI(
+            model=settings.openai_model,
+            api_key=settings.openai_api_key,
+            temperature=0,
+        )
+
+    bound_model = model.bind_tools(tools)
+
+    if async_mode:
+
+        async def agent_node(state: AgentState):
+            messages = [SystemMessage(content=system_prompt), *state["messages"]]
+            if before_model is not None:
+                before_model(messages)
+            with execution("model"):
+                return {"messages": [await bound_model.ainvoke(messages)]}
+    else:
+
+        def agent_node(state: AgentState):
+            messages = [SystemMessage(content=system_prompt), *state["messages"]]
+            return {"messages": [bound_model.invoke(messages)]}
+
+    builder = StateGraph(AgentState)
+
+    builder.add_node("agent", agent_node)
+    tool_node = ToolNode(tools, handle_tool_errors=handle_tool_errors)
+    if async_mode and before_tools is not None:
+
+        async def bounded_tools(state, config):
+            before_tools(state["messages"])
+            return await tool_node.ainvoke(state, config)
+
+        builder.add_node("tools", bounded_tools)
+    else:
+        builder.add_node("tools", tool_node)
+
+    builder.add_edge(START, "agent")
+
+    builder.add_conditional_edges(
+        "agent",
+        tools_condition,
+        {"tools": "tools", "__end__": END},
+    )
+
+    builder.add_edge("tools", "agent")
+
+    if checkpointer is None:
+        checkpointer = InMemorySaver()
+
+    return builder.compile(checkpointer=checkpointer)

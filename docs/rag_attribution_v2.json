@@ -1,0 +1,130 @@
+{
+  "corpus_version": "veridex-corpus-v2",
+  "intended_use": "Noncommercial coursework grading demo; remote publication requires separate authorization.",
+  "limitations": [
+    "NetMHCpan and MixMHC2pred are CC BY-NC 4.0: covered reuse must be noncommercial.",
+    "Article licenses do not independently license linked datasets, software, external supplements or excluded third-party material.",
+    "No author endorsement is implied. PDFs are unchanged; text extraction/chunking and recorded control escaping are modifications."
+  ],
+  "documents": [
+    {
+      "id": "rag_long_context_2024",
+      "title": "Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach",
+      "authors": [
+        "Zhuowan Li",
+        "Cheng Li",
+        "Mingyang Zhang",
+        "Qiaozhu Mei",
+        "Michael Bendersky"
+      ],
+      "source_url": "https://aclanthology.org/2024.emnlp-industry.66/",
+      "version": "ACL EMNLP Industry Track 2024, pages 881–893; 13-page publisher PDF; DOI 10.18653/v1/2024.emnlp-industry.66",
+      "sha256": "90407fd3c2bcf11d52868f0aaee3d39d6a9919351c89636555a641950531a070",
+      "license_id": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "copyright_notice": "©2024 Association for Computational Linguistics",
+      "modifications": [
+        "PDF text extraction and deterministic chunking"
+      ],
+      "third_party_scope": "Paper includes benchmark/prompt examples; no separate reproduction exclusion located. Underlying benchmarks, code and supplementary attachments are not independently licensed by this review."
+    },
+    {
+      "id": "react_2022",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "authors": [
+        "Shunyu Yao",
+        "Jeffrey Zhao",
+        "Dian Yu",
+        "Nan Du",
+        "Izhak Shafran",
+        "Karthik Narasimhan",
+        "Yuan Cao"
+      ],
+      "source_url": "https://arxiv.org/abs/2210.03629v3",
+      "version": "arXiv:2210.03629v3 (10 March 2023), ICLR camera ready, 33 pages",
+      "sha256": "f285b0971ae4a790e402fb93966bed3adde2cf0a04977d08b2b40d6ab0cace69",
+      "license_id": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "copyright_notice": "No explicit copyright notice located; preserve any supplied source notices",
+      "modifications": [
+        "PDF text extraction and chunking",
+        "Extracted Cc controls except TAB/LF/CR escaped after chunking as visible codepoint markers; exact offsets recorded in normalization.json"
+      ],
+      "third_party_scope": "No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials."
+    },
+    {
+      "id": "self_rag_2023",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "authors": [
+        "Akari Asai",
+        "Zeqiu Wu",
+        "Yizhong Wang",
+        "Avirup Sil",
+        "Hannaneh Hajishirzi"
+      ],
+      "source_url": "https://arxiv.org/abs/2310.11511v1",
+      "version": "arXiv:2310.11511v1 (17 October 2023), 30 pages",
+      "sha256": "d9eaa1398abac0df67a9d0933a5bf8b6d9d83d2e72da2a486073cd842dd52978",
+      "license_id": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "copyright_notice": "No explicit copyright notice located; preserve any supplied source notices",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ],
+      "third_party_scope": "No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials."
+    },
+    {
+      "id": "netmhcpan_2020",
+      "title": "NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen presentation by concurrent motif deconvolution and integration of MS MHC eluted ligand data",
+      "authors": [
+        "Birkir Reynisson",
+        "Bruno Alvarez",
+        "Sinu Paul",
+        "Bjoern Peters",
+        "Morten Nielsen"
+      ],
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7319546/",
+      "version": "Nucleic Acids Research 48(W1), W449–W454; DOI 10.1093/nar/gkaa379; 6 pages",
+      "sha256": "ac5722a2e7452f3dac4b09c921a1b9c3988b9d8c6f3170522dd2b417466dfca0",
+      "license_id": "CC-BY-NC-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "copyright_notice": "© The Author(s) 2020. Published by Oxford University Press on behalf of Nucleic Acids Research.",
+      "modifications": [
+        "PDF text extraction and chunking"
+      ],
+      "third_party_scope": "No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials."
+    },
+    {
+      "id": "mixmhc2pred_2023",
+      "title": "Machine learning predictions of MHC-II specificities reveal alternative binding mode of class II epitopes",
+      "authors": [
+        "Julien Racle",
+        "Philippe Guillaume",
+        "Julien Schmidt",
+        "Justine Michaux",
+        "Amédée Larabi",
+        "Kelvin Lau",
+        "Marta A. S. Perez",
+        "Giancarlo Croce",
+        "Raphaël Genolet",
+        "George Coukos",
+        "Vincent Zoete",
+        "Florence Pojer",
+        "Michal Bassani-Sternberg",
+        "Alexandre Harari",
+        "David Gfeller"
+      ],
+      "source_url": "https://www.sciencedirect.com/science/article/pii/S1074761323001292",
+      "version": "Immunity 56, 1359–1375.e1–e13; DOI 10.1016/j.immuni.2023.03.009; 31 pages",
+      "sha256": "57d6a34a71fa16a6fc33676f44ba2102b8e788c7a205844fc9f9584ce5ea1b90",
+      "license_id": "CC-BY-NC-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "copyright_notice": "© 2023 The Authors. Published by Elsevier Inc.",
+      "modifications": [
+        "PDF text extraction and chunking",
+        "Extracted Cc controls except TAB/LF/CR escaped after chunking as visible codepoint markers; exact offsets recorded in normalization.json"
+      ],
+      "third_party_scope": "No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials. Pages 19–31 are integral STAR+METHODS through e13. The page-15 supplemental-information link points to separate materials not included or cleared. Publisher HTML unavailable during review; local in-file notice is the evidence."
+    }
+  ]
+}
