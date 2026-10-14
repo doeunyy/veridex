@@ -20,6 +20,7 @@ ROOT_FILES = {
     "README.md",
     "pyproject.toml",
     "uv.lock",
+    "CORPUS_LICENSE_NOTICE.md",
 }
 REQUIRED = ROOT_FILES | {
     "scripts/serve_api.py",

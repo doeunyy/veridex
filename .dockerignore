@@ -32,3 +32,6 @@ reports/generated
 
 tests
 docs
+
+# Private coursework ZIP artifacts; supplied only through the rag named context
+/submission_artifacts/

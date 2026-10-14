@@ -146,24 +146,81 @@ Other endpoints:
 - `GET /ready` returns `{"status":"ready"}` once all MCP servers and tools are up.
 - `GET /attribution` returns the corpus licensing notices.
 
-Example anonymous call to the public grading endpoint:
+### Evaluate the public service
+
+These examples make real provider calls billed to the demo, not to your own keys.
+Run them deliberately, not as an automated load test. Use curl 7.76+ for
+`--fail-with-body`. Python 3 is used only to
+create an unpredictable session ID; curl uses a 300-second cold-start allowance.
 
 ```sh
-curl -sS -X POST "https://veridex-staging-200331083905.us-west1.run.app/chat" -H 'Content-Type: application/json' \
-  -d '{"query": "List the available documents.", "session_id": "demo-123"}'
+API_BASE='https://veridex-staging-200331083905.us-west1.run.app'
+SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/ready"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/health"
+# Two turns in the same session:
+curl --fail-with-body -sS --max-time 300 "$API_BASE/chat" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"Remember the fictional codeword violet-harbor. Reply briefly. Do not use tools.\",\"session_id\":\"$SESSION_ID\"}"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/chat" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"What fictional codeword did I ask you to remember? Do not use tools.\",\"session_id\":\"$SESSION_ID\"}"
+# Optional MCP evaluation, in a new session:
+SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/chat" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"Use list_documents to list the approved papers briefly.\",\"session_id\":\"$SESSION_ID\"}"
 ```
 
-## Using the deployed API or running locally
+Each successful chat returns only `{"response":"..."}`. The second memory turn
+should recall `violet-harbor` if the same instance/session remains alive. Replacement,
+scale-to-zero or idle expiry can lose memory; anonymous IDs do not establish ownership.
+An answer alone is not independent proof of MCP execution; sanitized dispatch logs
+provide that evidence to the service operator.
 
-The public API above is already deployed with Corpus v2. Calling it requires neither a
-local checkout nor a corpus download, but can consume the demo's provider allowance.
-The source ZIP is **source-only**: it does not contain the PDFs, Chroma index or approved
-external Corpus v2 bundle. It cannot independently reproduce the deployed release.
+## Local setup
 
-### Rebuilding the Corpus v2 release
+Run local commands from the extracted source ZIP root (the directory containing
+`pyproject.toml`). Install Python **3.13** and [uv](https://docs.astral.sh/uv/).
+Docker Desktop/Engine with Buildx/BuildKit and Linux/amd64 support is needed only
+for container execution; ARM hosts use emulation. Deployment additionally needs
+the gcloud CLI, an authenticated identity and an authorized billed GCP project.
+Dependency/base-image downloads need network access; no macOS-specific path is required.
 
-Obtain the exact approved external bundle through a separately authorized handoff;
-it is not a Git dependency or a publicly downloadable submission attachment:
+| Mode | ZIP alone sufficient? | Additional requirements |
+|---|---|---|
+| Existing public API | No ZIP needed | curl and Python 3 for the examples; no personal API keys |
+| Ordinary offline/mocked tests | Yes, after dependency installation | Cached tokenizer data for fully offline execution; no keys or corpus |
+| Historical local v1 agent | No | Separately obtained manifest-listed PDFs, a usable generated index, OpenAI/Tavily keys |
+| Production-equivalent v2 container | Source-only ZIP: no; coursework ZIP: corpus included | Docker, OpenAI/Tavily keys |
+
+```sh
+uv sync --locked
+# Needed only for local real-provider execution; skip for mocked tests:
+cp .env.example .env
+chmod 600 .env
+```
+
+Edit `.env` locally to provide your own `OPENAI_API_KEY` and `TAVILY_API_KEY`.
+`OPENAI_MODEL=gpt-5` requires model access; Evidence uses `text-embedding-3-small`.
+Never commit, share, print or bake credentials into an image. `.env` is Git-ignored;
+[`.env.example`](.env.example) contains placeholders and documented resource limits.
+Settings load `.env` automatically for the direct runner. The legacy
+`MCP_SERVERS_CONFIG` template entry is unused: no `mcp_config.json` is required.
+The built-in registry launches and discovers all three STDIO MCP servers automatically
+using the current Python executable; do not start them separately.
+
+The original `v1.0.0` source ZIP excludes PDFs, Chroma indexes and the external
+Corpus v2 bundle. The optional private coursework ZIP includes the same approved
+bundle at `submission_artifacts/veridex-rag-v2-local/`, plus
+[CORPUS_LICENSE_NOTICE.md](CORPUS_LICENSE_NOTICE.md). It supplies the corpus prerequisite,
+not provider keys or a byte-identical image build guarantee. Do not automatically
+publish that coursework ZIP or corpus as a public GitHub Release. The public service already
+contains that corpus; using it consumes the demo's provider allowance.
+
+### Choosing the approved Corpus v2 bundle
+
+For the original source-only release, obtain the exact approved external bundle
+through a separately authorized handoff. For the private coursework ZIP, use the
+included bundle instead; no paper download or re-embedding is needed. The corpus
+is supplied for noncommercial academic evaluation, not automatic public publication:
 
 - Bundle directory: `.artifacts/versions/veridex-rag-v2-local` (or an external path).
 - Required contents: `bundle.json`, `manifest.json`, five approved `papers/*.pdf`
@@ -181,44 +238,82 @@ Two PDFs have CC BY-NC 4.0 restrictions; bundle handoff is not blanket redistrib
 permission. A fresh provider rebuild also cannot guarantee byte-identical vectors or the
 approved metadata digest. See [`docs/corpus_v2.md`](docs/corpus_v2.md).
 
+### Production-equivalent Corpus v2 container
+
+Extract the coursework ZIP, open a terminal in its root (next to `Dockerfile`),
+and complete the Python/uv and secure `.env` setup above. Verify Docker and BuildKit
+before proceeding. The source-only ZIP needs an external handoff first; only the
+coursework ZIP includes the directory used in this example.
+
+```sh
+docker version
+docker buildx version
+RAG_BUNDLE_DIR="$PWD/submission_artifacts/veridex-rag-v2-local"
+uv run python scripts/rebuild_corpus_v2.py validate \
+  --bundle "$RAG_BUNDLE_DIR" \
+  --metadata-sha256 7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb
+docker buildx build --platform linux/amd64 \
+  --build-context "rag=$RAG_BUNDLE_DIR" \
+  --build-arg RAG_BUNDLE_SHA256=7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb \
+  --load --tag veridex:grader-v2-local .
+docker run --rm --name veridex-local --platform linux/amd64 \
+  --cpus=1 --memory=2g --publish 127.0.0.1:8080:8080 \
+  --env-file .env --env APP_ENV=production --env PORT=8080 --env PROVIDER_TIMEOUT_SECONDS=45 \
+  --env PROVIDER_MAX_RETRIES=0 veridex:grader-v2-local
+```
+
+Docker receives credentials at runtime through `--env-file`; `.env` is excluded from
+the build context. Docker administrators can inspect container environment values,
+so use a trusted workstation. No credentials are passed as build arguments.
+The entrypoint validates the read-only bundle, creates a private writable Chroma copy,
+sets v2 corpus paths and execs `scripts/serve_api.py` with one worker. All three MCP
+children start automatically; indexing/embedding is never performed at startup.
+
+In a second terminal, wait for startup logs, then check readiness. A 503 means the
+service is not ready; the first cold start can take substantially longer under emulation.
+This chat uses your keys and can incur provider costs.
+
+```sh
+API_BASE='http://127.0.0.1:8080'
+curl --fail-with-body -sS --max-time 300 "$API_BASE/health"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/ready"
+SESSION_ID="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+curl --fail-with-body -sS --max-time 300 "$API_BASE/chat" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"Use list_documents to list the approved papers briefly.\",\"session_id\":\"$SESSION_ID\"}"
+```
+
+To test two-turn memory, reuse the public evaluation commands with
+`API_BASE=http://127.0.0.1:8080`; the same schema and instance-local limits apply.
+Use fresh session IDs. Workspace listing requires no embedding call, but the model
+still uses OpenAI. Evidence also needs OpenAI query embeddings; Web uses Tavily.
+Use Ctrl-C in the container terminal for graceful shutdown. See
+[`docs/docker_local.md`](docs/docker_local.md) for artifact checks and historical evidence.
+
 ### Historical local Corpus v1 development
 
-Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), an OpenAI API key, and a Tavily
-API key for web search.
+This alternative requires separately supplied PDFs matching `data/samples/manifest.json`
+and a usable v1 index. The sample includes `rag_2020`, replaced in v2 because no reuse
+license was verified. Neither PDFs nor index are submitted. Set `DOCUMENTS_DIR` and
+`CHROMA_PERSIST_DIR` in `.env` to your own local data locations; the sample manifest
+must match your PDFs. `uv sync` does not create an index.
+
+Only after those prerequisites and runtime credentials are supplied:
 
 ```sh
-uv sync                      # installs locked dependencies into .venv
-cp .env.example .env         # then fill in OPENAI_API_KEY and TAVILY_API_KEY
+uv run python scripts/serve_api.py
 ```
 
-The tracked `data/samples/manifest.json` still lists v1 papers, including `rag_2020`,
-which v2 replaced because no reuse license was verified. `scripts/ingest.py` always
-reads that manifest and targets the configured `CHROMA_PERSIST_DIR` (default
-`data/index/`) for v1 development, not v2. It makes paid OpenAI embedding calls.
-The PDFs and vector indexes for both versions are excluded from Git and the source ZIP.
+The direct runner binds `0.0.0.0:$PORT` (default 8080), starts all three MCP children,
+and exposes the same health/readiness/chat routes. Use the localhost checks above.
+This direct host binding is not restricted to localhost; use a trusted local network.
+`scripts/ingest.py` reads the v1 sample manifest and makes paid embedding calls.
+`scripts/ingest.py --rebuild` deletes its configured index: never target protected
+original/recovered/versioned artifacts. It is not a v2 setup command. The original
+v1 index failed FTS5 checks and is not a validated release input.
 
-The actual local API entrypoint is `scripts/serve_api.py`. With the historical default
-paths it requires separately supplied v1 PDFs and a usable index; `uv sync` alone does
-not initialize a corpus. The preserved original `data/index/` failed FTS5 checks and
-must not be treated as a validated release index. Do not run ingestion against protected
-original, recovered or versioned artifacts. `scripts/ingest.py --rebuild` deletes its
-configured index and makes paid embedding calls; it is not a v2 setup command.
-
-Run only after configuring suitable local data and runtime credentials:
-
-```sh
-uv run python scripts/serve_api.py      # binds 0.0.0.0:$PORT (default 8080)
-```
-
-For the release, prefer the validated v2 container workflow. Docker starts
-`/opt/venv/bin/python /app/scripts/container_entrypoint.py`; it validates the immutable
-bundle, prepares a separate writable Chroma copy, sets v2 paths, then execs
-`scripts/serve_api.py` with one Uvicorn worker. The removed empty root `main.py` was
-not an application entrypoint.
-
-The interactive CLIs (`scripts/chat_mcp_agent.py`, `scripts/inspect_mcp.py`) use the same
-MCP servers. Container builds and the offline Docker checks are in
-[`docs/docker_local.md`](docs/docker_local.md).
+The interactive CLIs `scripts/chat_mcp_agent.py` and `scripts/inspect_mcp.py` use the
+same registry. `scripts/serve_api.py` is the actual API runner; no root entrypoint
+placeholder or external MCP configuration file is needed.
 
 ## Testing
 
@@ -302,35 +397,80 @@ gcloud run services update-traffic veridex-staging --project=zeta-store-511505-i
   --to-revisions=veridex-staging-timeout45=100
 ```
 
-**How it was deployed** (simplified; the full gated, reviewed commands are in
-[`docs/cloud_run_commands.md`](docs/cloud_run_commands.md)). Replace every `<...>` value;
-never put API keys in commands.
+### Deploying a new image to your own project
+
+This is a reusable procedure, not permission to change the existing demo. First
+supply the external bundle and build `veridex:grader-v2-local` as above. Install and
+authenticate gcloud for your own project. That project must have billing, Cloud Run,
+Artifact Registry, Secret Manager and IAM APIs enabled; a Docker repository, dedicated
+runtime service account, and enabled numeric OpenAI/Tavily secret versions must already
+be provisioned. These are prerequisites, not resources created by this example.
+The runtime account needs Secret Accessor on those two secrets only. The publisher
+needs repository Writer; the deployer needs Cloud Run deployment permissions and
+Service Account User on the runtime identity. Public IAM changes require separate authority.
+
+Replace the `YOUR_...` values before running. Do not put key values in these variables.
+Use a fresh tag in your repository; do not overwrite an existing release tag.
 
 ```sh
-export PROJECT_ID='<PROJECT_ID>' REGION='us-west1' REPO='veridex'
-export IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/veridex:<TAG>"
-
-docker buildx build --platform linux/amd64 \
-  --build-context rag=<PATH_TO_CORPUS_V2_BUNDLE> \
-  --build-arg RAG_BUNDLE_SHA256=<BUNDLE_SHA256> --load --tag "$IMAGE" .
-docker push "$IMAGE"   # deploy by the resulting digest, not the tag
-
-gcloud run deploy veridex-staging --project="$PROJECT_ID" --region="$REGION" \
-  --image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/veridex@sha256:<DIGEST>" \
-  --service-account='<RUNTIME_SA_EMAIL>' \
+PROJECT_ID='YOUR_PROJECT_ID'
+REGION='us-west1'
+REPO='YOUR_DOCKER_REPOSITORY'
+SERVICE='YOUR_NEW_SERVICE_NAME'
+TAG='YOUR_UNIQUE_IMAGE_TAG'
+RUNTIME_SA='YOUR_RUNTIME_SERVICE_ACCOUNT_EMAIL'
+OPENAI_SECRET='YOUR_OPENAI_SECRET_NAME'
+TAVILY_SECRET='YOUR_TAVILY_SECRET_NAME'
+OPENAI_VERSION='YOUR_ENABLED_NUMERIC_VERSION'
+TAVILY_VERSION='YOUR_ENABLED_NUMERIC_VERSION'
+IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/veridex:$TAG"
+gcloud auth configure-docker "$REGION-docker.pkg.dev"
+docker tag veridex:grader-v2-local "$IMAGE_TAG"
+docker push "$IMAGE_TAG"
+IMAGE_DIGEST="$(gcloud artifacts docker images describe "$IMAGE_TAG" \
+  --project="$PROJECT_ID" --format='value(image_summary.digest)')"
+case "$IMAGE_DIGEST" in
+  sha256:*) ;; # Inspect this digest before continuing.
+  *) printf '%s\n' 'Missing registry digest; stop.' >&2; exit 1 ;;
+esac
+IMAGE_REF="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/veridex@$IMAGE_DIGEST"
+gcloud run deploy "$SERVICE" --project="$PROJECT_ID" --region="$REGION" \
+  --image="$IMAGE_REF" --service-account="$RUNTIME_SA" \
   --execution-environment=gen2 --port=8080 --cpu=1 --memory=2Gi \
   --concurrency=1 --min=0 --max=1 --max-instances=1 \
   --timeout=300s --cpu-throttling --cpu-boost --no-session-affinity \
   --ingress=all --no-allow-unauthenticated --invoker-iam-check \
   --startup-probe='httpGet.path=/ready,httpGet.port=8080,initialDelaySeconds=0,periodSeconds=10,timeoutSeconds=3,failureThreshold=24' \
-  --set-env-vars='APP_ENV=production,LOG_LEVEL=INFO,OPENAI_MODEL=<MODEL>,PROVIDER_TIMEOUT_SECONDS=45,PROVIDER_MAX_RETRIES=0' \
-  --set-secrets='OPENAI_API_KEY=<OPENAI_SECRET>:<VERSION>,TAVILY_API_KEY=<TAVILY_SECRET>:<VERSION>'
+  --set-env-vars='APP_ENV=production,LOG_LEVEL=INFO,OPENAI_MODEL=gpt-5,PROVIDER_TIMEOUT_SECONDS=45,PROVIDER_MAX_RETRIES=0,API_MAX_ACTIVE_REQUESTS=1,API_MAX_WAITING_REQUESTS=0' \
+  --set-secrets="OPENAI_API_KEY=$OPENAI_SECRET:$OPENAI_VERSION,TAVILY_API_KEY=$TAVILY_SECRET:$TAVILY_VERSION"
+gcloud run services describe "$SERVICE" --project="$PROJECT_ID" --region="$REGION" \
+  --format='value(status.url)'
 ```
 
-The real deployment also sets the remaining request and agent limit variables (see
-[`.env.example`](.env.example)). Later revisions were created with `--no-traffic` and then
-traffic was shifted with `gcloud run services update-traffic`. Use the reviewed commands
-rather than this summary.
+The other request/agent limits use the source defaults in `.env.example`; `PORT`
+is supplied by Cloud Run. This creates a **private** service. Authorized invokers can
+use `gcloud run services proxy "$SERVICE" --project="$PROJECT_ID" --region="$REGION"`
+and the localhost health/readiness checks. An identity must have Invoker permission;
+deployment permission alone does not imply invocation permission.
+
+Only after explicitly accepting public access, rights and provider-spending risks,
+a service IAM administrator can enable anonymous grading access separately:
+
+```sh
+gcloud run services add-iam-policy-binding "$SERVICE" --project="$PROJECT_ID" \
+  --region="$REGION" --member=allUsers --role=roles/run.invoker
+```
+
+Use the returned service URL with the evaluation examples above. Keep Invoker IAM
+enforcement enabled; stop if organization policy blocks the grant. For updates to
+an existing service, stage a separately reviewed `--no-traffic` revision rather than
+running this initial-create example blindly. Registry storage, Cloud Run and provider
+usage can incur costs; retain the service until grading is complete.
+
+[`docs/cloud_run_commands.md`](docs/cloud_run_commands.md) preserves historical
+approval-gated commands and image identities. Its old identity-pinned publication
+function is not a reusable requirement for your new build. The recorded deployed
+image/source above remains unchanged by any new documentation or build.
 
 ### Public grading access
 
@@ -435,15 +575,23 @@ the Brightspace URL field, the clean source ZIP, `PROCESS_LOG.md`, and `README.m
 as required by the handout. README and PROCESS_LOG are also included at the ZIP root.
 The API path is `/chat`; keep the service available until grades are posted. The
 planned December 14 revocation date must be reviewed if grading is still ongoing.
-The ZIP excludes credentials, environments, PDFs and indexes; see Corpus v2 setup
-above for the separately provisioned deployment bundle.
+The original source-only ZIP excludes credentials, environments, PDFs and indexes.
+The optional private coursework ZIP includes exactly the approved 12-file Corpus v2
+bundle under `submission_artifacts/veridex-rag-v2-local/`, with notices outside it.
+It still excludes all credentials, environments, history and unrelated artifacts.
 Package reviewed source, tests, scripts, lock/project files, README, PROCESS_LOG,
 diagrams and license notices at the ZIP root with their repository-relative paths.
-Only `data/samples/` catalog/evaluation JSON belongs in the source package; exclude
+Only `data/samples/` catalog/evaluation JSON belongs in the source-only package; exclude
 private development notes, Git history, local tooling directories, caches and generated
 artifacts. `tests/test_submission_packaging.py` checks the source inventory and external
 corpus prerequisites. A new ZIP must be generated and verified after final source review;
 an older archive is not automatically updated by editing the working tree.
+`scripts/package_submission.py --ref <APPROVED_REF> --mode source-only` validates
+a frozen Git-source plan without writing. Coursework planning additionally requires
+`--mode coursework --bundle <APPROVED_BUNDLE_DIRECTORY>` and the root license notice
+in that source commit. ZIP creation requires separately approved `--write --output`
+with a new filename; existing archives are never overwritten. Do not include the
+corpus in Git or automatically attach it to a public release.
 
 ## Further documentation
 
