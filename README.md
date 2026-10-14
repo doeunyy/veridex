@@ -236,16 +236,16 @@ uv run ruff check . && uv run ruff format --check .
 
 Latest verified results (2026-10-13):
 
-- **Offline (Step 4.12c):** 467 passed (47 integration tests deselected).
-  Prior Docker verification passed 33 TCP end-to-end tests and 2 observability tests.
-  Ruff is clean; the current local SDK logging safeguard has not been Docker-tested.
+- **Offline (Step 4.12e):** 497 passed (47 integration tests deselected).
+  Step 4.12g Docker verification passed 35 tests (33 TCP end-to-end and 2 observability),
+  including the MCP SDK logging safeguard; Ruff passed.
 - **Live private-staging tests** (each run once):
 
 | Test | What it checks | Result |
 |---|---|---|
 | 1–3 | Direct answer, same-session memory, different-session isolation | Passed |
 | 4 | `search_evidence` with filter and citations | Partial: citations correct, answer left out the Self-Route mechanism |
-| 5 | `list_documents` → `read_document` chaining | Passed (rerun on the current revision, both calls logged) |
+| 5 | `list_documents` → `read_document` chaining | Passed (rerun on the earlier instrumented revision, both calls logged) |
 | 6 | `search_web` for the ACL Anthology page | First run returned HTTP 500 (cause unconfirmed); rerun on the instrumented revision passed |
 | 7 | `search_evidence` + `search_web` in one turn | Passed (both calls logged) |
 | 8 | Safe tool failure on a missing document | Passed (controlled tool error, no invented content) |
@@ -276,19 +276,30 @@ flowchart LR
 | Item | Value |
 |---|---|
 | Service / region | `veridex-staging`, `us-west1` |
-| Serving revision | `veridex-staging-timeout45`, 100% of traffic |
-| Rollback revisions | `veridex-staging-00002-9sk` (same image, 30 s provider timeout); `veridex-staging-00001-f5t` (previous image) |
-| Image | `us-west1-docker.pkg.dev/<PROJECT_ID>/veridex/veridex@sha256:4ed6440e87f2f05816a54126218b3ce0c34ed906e2ae8ff425db36a655ea0b23` |
+| Serving revision | `veridex-staging-mcp-log-35bbef6`, 100% of normal traffic |
+| Immediate rollback revision | `veridex-staging-timeout45`, 0% of normal traffic, retained with its existing tag |
+| Image | `us-west1-docker.pkg.dev/zeta-store-511505-i7/veridex/veridex@sha256:8657fdecc15737cc29abec5dfdd7f79052332f3065f03e78678044f80cd4a391` |
 | Corpus bundle SHA-256 | `7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb` |
 | Runtime settings | 1 vCPU / 2 GiB, concurrency 1, max 1 instance, min 0, startup probe `/ready` (240 s), `PROVIDER_TIMEOUT_SECONDS=45` (source default 30) |
 | Access | Public: service-level `allUsers` Invoker binding; Invoker IAM check remains enabled |
 
-**Source provenance:** deployment verification matched the runtime source in the image
-to commit `fc73f1a`, including the whole `src/veridex` tree. The image was built
-**before** that commit existed, and a byte-for-byte reproducible rebuild has not been
-demonstrated. The subsequent Step 4.12c MCP SDK logging safeguard is local-only and
-is not included in the serving image. Rebuilding current source therefore produces
-a new release candidate, not an exact reproduction of the deployed image bytes.
+**Source provenance:** the serving image was built from commit
+`35bbef63f6b7b704ac8c5b34c080f433b40faffd`, recorded in its OCI revision label.
+It includes the MCP SDK class-only logging safeguard and was validated locally,
+published by immutable digest, health-checked at zero traffic, and promoted after
+one live Workspace smoke test verified two model calls and one successful
+`workspace/list_documents` call. Earlier live tests above describe historical
+revisions, not repeated tests of this image. Later documentation or merge commits
+do not change the image's source provenance. Byte-identical rebuilds have not been
+demonstrated; rebuilding also requires the approved external Corpus v2 bundle.
+
+**Rollback** (prepared, not executed; requires approval):
+
+```sh
+gcloud run services update-traffic veridex-staging --project=zeta-store-511505-i7 \
+  --region=us-west1 --account=doeunkim@usc.edu \
+  --to-revisions=veridex-staging-timeout45=100
+```
 
 **How it was deployed** (simplified; the full gated, reviewed commands are in
 [`docs/cloud_run_commands.md`](docs/cloud_run_commands.md)). Replace every `<...>` value;

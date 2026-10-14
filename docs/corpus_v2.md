@@ -217,5 +217,7 @@ is generated into the image rather than added to the immutable bundle inventory.
 Historical statements about pending Docker work describe the 4.7g handoff. Subsequent
 approved publication, Cloud Run staging and public/live verification are summarized in
 [README.md](../README.md#cloud-run-deployment). Those approvals do not authorize
-redistributing this external bundle or publishing a new image. The local Step 4.12c
-MCP SDK logging change has not been deployed.
+redistributing this external bundle or publishing a new image. The Step 4.12c MCP SDK logging safeguard was subsequently Docker-validated and
+deployed in `veridex-staging-mcp-log-35bbef6`, now serving 100% of normal traffic.
+Its image source remains commit `35bbef6`; later documentation updates do not
+change that provenance.

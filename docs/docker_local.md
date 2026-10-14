@@ -37,12 +37,13 @@ The default build context intentionally excludes `data/`, `.artifacts/`, `.env`,
 Git metadata and private files. Do not weaken `.dockerignore`, substitute a v1 digest,
 or use `scripts/ingest.py` to satisfy a missing v2 prerequisite. The pinned digest,
 inventory and index checks fail closed; no build step re-ingests or re-embeds.
-Rebuilding current source includes the local MCP SDK logging fix and would produce
-a new image candidate; it does not reproduce the currently deployed image exactly.
-The serving image's runtime source was verified against commit `fc73f1a`; match the
-recorded source, Dockerfile and lock as well as the bundle when reproducing that release.
-Even then, byte-identical image reconstruction has not been demonstrated. See the
-[deployment provenance](../README.md#cloud-run-deployment) before choosing a source state.
+The serving image includes the MCP SDK logging safeguard and was built from
+`35bbef63f6b7b704ac8c5b34c080f433b40faffd`, with that source revision recorded
+in its OCI label. Step 4.12g verified 35 offline Docker tests against this image.
+Match the recorded source, Dockerfile, lock and external bundle when reproducing
+that release; later documentation commits are not its build provenance.
+Byte-identical image reconstruction has not been demonstrated. See the
+[deployment provenance](../README.md#cloud-run-deployment) for its immutable digest.
 
 The verified stage explicitly selects the replacement PDF, validates 586 vectors,
 five v2 IDs, metadata, SQLite/FTS5, four text filters and all native self-queries.

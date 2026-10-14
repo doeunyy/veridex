@@ -1,7 +1,11 @@
 > Current public-access status (2026-10-13): Step 4.10c executed only the service-level
 > allUsers Invoker grant on veridex-staging. Invoker IAM checks remain enabled;
-> timeout45 receives 100% of traffic, min0/max1 unchanged. Anonymous health and one
-> chat smoke test passed. Historical approval gates below are retained as records.
+> `veridex-staging-mcp-log-35bbef6` receives 100% of normal traffic; timeout45
+> remains available at 0% for rollback. Min0/max1 are unchanged. Anonymous health
+> and chat verification passed, including the new revision’s live Workspace test.
+> Serving digest: `sha256:8657fdecc15737cc29abec5dfdd7f79052332f3065f03e78678044f80cd4a391`.
+> Image source: `35bbef63f6b7b704ac8c5b34c080f433b40faffd`; provider timeout 45s, retries 0.
+> Historical approval gates below are retained as records.
 > Planned revocation date: December 14, 2026; no automation is scheduled.
 >
 > Prepared revocation (NOT EXECUTED; requires approval):
@@ -12,9 +16,10 @@
 > [gcp_provisioning_review_481b.md](gcp_provisioning_review_481b.md) for provisioning.
 > They supersede the generic bootstrap/budget blocks below. Do not create a project,
 > link billing, or re-enable existing APIs. All publication/deployment/public gates
-> below remain unexecuted and separately authorized.
+> below are historical prepared commands, not a run-all authorization. Subsequent
+> approved actions are summarized above; any new execution requires approval.
 
-# Reviewed future Cloud Run commands — NOT EXECUTED
+# Reviewed Cloud Run commands — historical approval-gated reference
 
 These blocks are a proposed sequence for Step 4.8, not authorization and not a
 run-all script. Stop at each gate in [cloud_run_preflight.md](cloud_run_preflight.md).
@@ -314,3 +319,15 @@ gcloud run services get-iam-policy "$VERIDEX_SERVICE" \
 gcloud run services delete "$VERIDEX_SERVICE" \
   --region="$VERIDEX_REGION" --project="$VERIDEX_PROJECT_ID"
 ```
+
+## Immediate rollback — PREPARED, NOT EXECUTED
+
+The previous serving revision remains available. Changing traffic requires separate approval.
+
+```sh
+gcloud run services update-traffic veridex-staging --project=zeta-store-511505-i7 \
+  --region=us-west1 --account=doeunkim@usc.edu \
+  --to-revisions=veridex-staging-timeout45=100
+```
+
+This command changes only normal traffic; retain existing tags and public IAM policy.

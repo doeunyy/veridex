@@ -1,3 +1,13 @@
+> Current deployment (2026-10-13): the approved public service is
+> `veridex-staging-mcp-log-35bbef6` at 100% normal traffic, built from `35bbef6`.
+> Digest: `sha256:8657fdecc15737cc29abec5dfdd7f79052332f3065f03e78678044f80cd4a391`.
+> Timeout45 remains at 0% for rollback. Provider timeout 45s, retries 0; min0/max1.
+> OpenAI's USD 5 enforced limit and Tavily Free/PAYG-disabled settings were manually
+> confirmed; the GCP USD 5 budget is alerts-only. Corpus v2 notices and noncommercial
+> restrictions remain applicable. Earlier dated planning/approval sections below
+> are historical records. See [README](../README.md#cloud-run-deployment) for current
+> provenance and [commands](cloud_run_commands.md) for prepared rollback/revocation.
+
 # Step 4.7c — public grading approval gate
 
 No cloud mutation, publication, paid provider request or artifact replacement is
