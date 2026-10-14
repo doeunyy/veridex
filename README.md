@@ -254,15 +254,16 @@ Latest verified results (2026-10-13):
 
 ```mermaid
 flowchart LR
-    dev["Developer workstation<br/>Docker · same OpenAI backend"] -->|"push image (linux/amd64)"| ar[("Artifact Registry<br/>us-west1 · private repo")]
+    dev["Developer workstation<br/>Docker image build · same OpenAI backend"] -->|"push image (linux/amd64)"| ar[("Artifact Registry<br/>us-west1 · private repo")]
     ar -->|"pinned digest"| svc
     subgraph gcp["Google Cloud project · us-west1"]
         svc["Cloud Run service<br/>Gen2 · 1 vCPU / 2 GiB · concurrency 1<br/>min 0 / max 1 instances · timeout 300 s"]
         sm[("Secret Manager<br/>numeric versions")] -->|"env refs"| svc
         sa["Dedicated runtime<br/>service account"] -.-> svc
         svc --> logs["Cloud Logging<br/>sanitized events"]
-        budget["USD 5 monthly<br/>budget alert"] -.-> gcp
     end
+    budget["USD 5 monthly<br/>budget alert"] -.-> gcp
+    corpus["Approved external Corpus v2 bundle"] -->|"named build context: rag"| dev
     env["Local .env (development only)"] --> local["Local API + MCP processes"]
     vars["Non-secret shell variables"] -->|"--set-env-vars"| svc
     sm -->|"--set-secrets: numeric refs<br/>runtime-only environment values"| svc
