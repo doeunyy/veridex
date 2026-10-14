@@ -32,7 +32,7 @@ def emitted():
 
 @pytest.fixture
 def restore_uvicorn_logging():
-    names = ["uvicorn", "uvicorn.error", "uvicorn.access"]
+    names = ["uvicorn", "uvicorn.error", "uvicorn.access", "mcp.client.stdio"]
     loggers = {name: logging.getLogger(name) for name in names}
     saved = {
         name: (log.handlers[:], log.filters[:], log.level, log.propagate)
@@ -149,7 +149,10 @@ def test_log_config_extends_uvicorn_default_without_mutating_it():
     assert config["handlers"]["default"]["filters"] == ["sanitized_framework_errors"]
     assert "filters" not in config["handlers"]["access"]
     assert "filters" not in LOGGING_CONFIG["handlers"]["default"]
-    assert config["loggers"] == LOGGING_CONFIG["loggers"]
+    assert all(
+        config["loggers"][name] == value for name, value in LOGGING_CONFIG["loggers"].items()
+    )
+    assert config["loggers"]["mcp.client.stdio"]["filters"] == ["sanitized_framework_errors"]
 
 
 @pytest.mark.asyncio

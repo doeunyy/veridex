@@ -1,4 +1,4 @@
-"""Class-only framework error records at Uvicorn's error handler boundary.
+"""Class-only errors at Uvicorn's handler and the MCP STDIO logger boundaries.
 
 Uvicorn logs ASGI and lifespan failures with full tracebacks. A traceback prints raw
 exception messages, including chained __cause__/__context__ text that may carry
@@ -17,6 +17,7 @@ from veridex.observability import exception_class
 _CLASSIFICATIONS = {
     "Exception in ASGI application\n": "asgi_application",
     "Exception in 'lifespan' protocol\n": "lifespan_protocol",
+    "Failed to parse JSONRPC message from server": "mcp_stdio_parse",
 }
 # Fixed Uvicorn messages with no interpolated or exception-derived text.
 _SAFE_ERRORS = {
@@ -27,6 +28,7 @@ _SAFE_ERRORS = {
 }
 _TRACEBACK = "Traceback (most recent call last)"
 _FALLBACK = json.dumps({"classification": "unclassified", "event": "framework_error"})
+_SANITIZED = object()
 
 
 def _exception(record):
@@ -50,6 +52,8 @@ class SanitizedFrameworkErrors(logging.Filter):
     """Never drops a record and never formats exception objects or record arguments."""
 
     def filter(self, record):
+        if getattr(record, "_veridex_sanitized", None) is _SANITIZED:
+            return True
         try:
             exception = _exception(record)
             if exception is None and (
@@ -68,14 +72,22 @@ class SanitizedFrameworkErrors(logging.Filter):
         record.exc_info = None
         record.exc_text = None
         record.stack_info = None
+        record._veridex_sanitized = _SANITIZED
         return True
 
 
 def uvicorn_log_config():
-    """Uvicorn's default config with the filter on the handler serving uvicorn.error."""
+    """Protect Uvicorn's error handler and MCP STDIO records before propagation."""
     config = copy.deepcopy(LOGGING_CONFIG)
     config.setdefault("filters", {})["sanitized_framework_errors"] = {
         "()": SanitizedFrameworkErrors
     }
     config["handlers"]["default"].setdefault("filters", []).append("sanitized_framework_errors")
+    # Logger filters run before direct AND propagated handlers. The SDK logs raw
+    # Pydantic payload details here; a Uvicorn handler filter cannot protect it.
+    config["loggers"]["mcp.client.stdio"] = {
+        "filters": ["sanitized_framework_errors"],
+        "level": "NOTSET",
+        "propagate": True,
+    }
     return config
