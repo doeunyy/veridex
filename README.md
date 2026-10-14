@@ -149,7 +149,35 @@ curl -sS -X POST "$SERVICE_URL/chat" -H 'Content-Type: application/json' \
   -d '{"query": "List the available documents.", "session_id": "demo-123"}'
 ```
 
-## Local setup
+## Using the deployed API or running locally
+
+The public API above is already deployed with Corpus v2. Calling it requires neither a
+local checkout nor a corpus download, but can consume the demo's provider allowance.
+The source ZIP is **source-only**: it does not contain the PDFs, Chroma index or approved
+external Corpus v2 bundle. It cannot independently reproduce the deployed release.
+
+### Rebuilding the Corpus v2 release
+
+Obtain the exact approved external bundle through a separately authorized handoff;
+it is not a Git dependency or a publicly downloadable submission attachment:
+
+- Bundle directory: `.artifacts/versions/veridex-rag-v2-local` (or an external path).
+- Required contents: `bundle.json`, `manifest.json`, five approved `papers/*.pdf`
+  files and the complete `chroma/` persistence directory.
+- Pinned **SHA-256 of `bundle.json`**:
+  `7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
+- Collection: `veridex_documents`; 586 chunks; `text-embedding-3-small`; 1,536 dimensions.
+
+Docker BuildKit must receive that directory as the separate named build context **`rag`**.
+Do not add it to the default context or substitute the historical v1 index. See
+[`docs/docker_local.md`](docs/docker_local.md) for the exact validation/build commands.
+Missing or mismatched artifacts fail validation; builds never ingest or regenerate vectors.
+Obtaining/recreating a corpus and making paid embedding calls require separate approval.
+Two PDFs have CC BY-NC 4.0 restrictions; bundle handoff is not blanket redistribution
+permission. A fresh provider rebuild also cannot guarantee byte-identical vectors or the
+approved metadata digest. See [`docs/corpus_v2.md`](docs/corpus_v2.md).
+
+### Historical local Corpus v1 development
 
 Requirements: Python 3.13, [uv](https://docs.astral.sh/uv/), an OpenAI API key, and a Tavily
 API key for web search.
@@ -159,25 +187,30 @@ uv sync                      # installs locked dependencies into .venv
 cp .env.example .env         # then fill in OPENAI_API_KEY and TAVILY_API_KEY
 ```
 
-- **Corpus:** the PDFs and vector indexes are **not stored in Git**, and two corpus versions
-  exist:
-  - **Corpus v2 (deployed release):** the five papers listed in
-    [`docs/rag_attribution_v2.json`](docs/rag_attribution_v2.json), prepared, indexed and
-    packaged as a digest-validated bundle by the procedure in
-    [`docs/corpus_v2.md`](docs/corpus_v2.md) and [`docs/rag_artifacts.md`](docs/rag_artifacts.md).
-    The Docker image bundles it and points all three servers at it at startup, so the container
-    ([`docs/docker_local.md`](docs/docker_local.md)) is the supported way to run v2 locally.
-  - **Corpus v1 (historical development files):** the tracked `data/samples/manifest.json`
-    still lists the v1 papers, including `rag_2020`, which v2 replaced because no reuse
-    license was verified. `scripts/ingest.py` always reads that manifest, so running it
-    rebuilds the v1 development index into `data/index/`, not v2. Building calls the paid
-    OpenAI embeddings API.
+The tracked `data/samples/manifest.json` still lists v1 papers, including `rag_2020`,
+which v2 replaced because no reuse license was verified. `scripts/ingest.py` always
+reads that manifest and targets the configured `CHROMA_PERSIST_DIR` (default
+`data/index/`) for v1 development, not v2. It makes paid OpenAI embedding calls.
+The PDFs and vector indexes for both versions are excluded from Git and the source ZIP.
 
-Run the API locally:
+The actual local API entrypoint is `scripts/serve_api.py`. With the historical default
+paths it requires separately supplied v1 PDFs and a usable index; `uv sync` alone does
+not initialize a corpus. The preserved original `data/index/` failed FTS5 checks and
+must not be treated as a validated release index. Do not run ingestion against protected
+original, recovered or versioned artifacts. `scripts/ingest.py --rebuild` deletes its
+configured index and makes paid embedding calls; it is not a v2 setup command.
+
+Run only after configuring suitable local data and runtime credentials:
 
 ```sh
 uv run python scripts/serve_api.py      # binds 0.0.0.0:$PORT (default 8080)
 ```
+
+For the release, prefer the validated v2 container workflow. Docker starts
+`/opt/venv/bin/python /app/scripts/container_entrypoint.py`; it validates the immutable
+bundle, prepares a separate writable Chroma copy, sets v2 paths, then execs
+`scripts/serve_api.py` with one Uvicorn worker. The removed empty root `main.py` was
+not an application entrypoint.
 
 The interactive CLIs (`scripts/chat_mcp_agent.py`, `scripts/inspect_mcp.py`) use the same
 MCP servers. Container builds and the offline Docker checks are in
@@ -190,8 +223,9 @@ uv run pytest                 # ordinary offline suite; integration tests are de
 uv run ruff check . && uv run ruff format --check .
 ```
 
-- **Ordinary suite:** needs no network or API keys. It uses real stdio MCP servers with
-  scripted models and mocked providers.
+- **Ordinary suite:** needs no provider API keys or paid calls. It uses real stdio MCP
+  servers with scripted models and mocked providers. Tokenizer assets must already be
+  cached for a fully offline first run; otherwise tiktoken may download its public data.
 - **Opt-in tests:** marked `integration`. They include the live-provider tests and the Docker
   TCP tests, which need a separately started offline container (see
   [`docs/docker_local.md`](docs/docker_local.md)).
@@ -240,10 +274,12 @@ flowchart LR
 | Runtime settings | 1 vCPU / 2 GiB, concurrency 1, max 1 instance, min 0, startup probe `/ready` (240 s), `PROVIDER_TIMEOUT_SECONDS=45` (source default 30) |
 | Access | Private: IAM invoker required, no public binding |
 
-**Source provenance:** the runtime source in the image matches commit `fc73f1a`. All
-changed runtime files, and the whole `src/veridex` tree, hash identically to the files
-inside the image. However, the image was built **before** that commit existed, and a
-byte-for-byte reproducible rebuild has not been demonstrated.
+**Source provenance:** deployment verification matched the runtime source in the image
+to commit `fc73f1a`, including the whole `src/veridex` tree. The image was built
+**before** that commit existed, and a byte-for-byte reproducible rebuild has not been
+demonstrated. The subsequent Step 4.12c MCP SDK logging safeguard is local-only and
+is not included in the serving image. Rebuilding current source therefore produces
+a new release candidate, not an exact reproduction of the deployed image bytes.
 
 **How it was deployed** (simplified; the full gated, reviewed commands are in
 [`docs/cloud_run_commands.md`](docs/cloud_run_commands.md)). Replace every `<...>` value;

@@ -1,10 +1,45 @@
-# Corpus v2 preparation and paid-call gate
+# Corpus v2 reproducibility and preparation record
+
+## Current use and external prerequisite
+
+The deployed public service uses Corpus v2:
+`https://veridex-staging-200331083905.us-west1.run.app/chat`.
+Its JSON contract remains `{"query": string, "session_id": string}` →
+`{"response": string}`. Using that service does not require local corpus files.
+
+The repository and source ZIP omit all PDFs, indexes and the approved external bundle.
+Rebuilding a v2 container requires a separately authorized handoff of
+`.artifacts/versions/veridex-rag-v2-local` (or the same bundle at an external path):
+`bundle.json`, `manifest.json`, five `papers/*.pdf` files and the complete `chroma/`
+directory. The pinned **SHA-256 of `bundle.json`** is
+`7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
+The expected collection is `veridex_documents`, with 586 chunks and 1,536-dimensional
+`text-embedding-3-small` vectors. Supply it as Docker's named context **`rag`**, never
+by relaxing default-context exclusions. Exact validation/build commands are in
+[docker_local.md](docker_local.md).
+
+Source-only recipients can inspect and test the implementation with synthetic fixtures,
+but cannot reproduce the released corpus/index without that external dependency.
+The bundle preserves completed model/usage and vector provenance; regenerating embeddings
+from the PDFs is a new paid, versioned operation, not a way to recreate the pinned bytes.
+It needs separate approval, rights review, a new digest and full index/retrieval validation.
+Model alias identity and a pinned extraction recipe do not guarantee future bit-identical
+provider vectors or native database/image bytes.
+
+The tracked `data/samples/manifest.json` and `scripts/ingest.py` belong to historical
+Corpus v1 (`rag_2020`, 615 original chunks), not this v2 release. That ingestion script
+cannot reproduce v2. Do not re-ingest or alter the protected original/recovered/v1/v2
+artifacts. The original v1 index failed FTS5 checks; its recovered copy is a separate
+historical candidate. The source ZIP distributes neither version's PDFs or index.
+
+## Historical preparation record (Steps 4.7f–4.7g)
 
 Steps 4.7f–4.7g, 2026-10-12: PDF acquisition, approved embedding execution,
 Chroma construction and local bundle export completed. The original offline
 preparation record is retained unchanged; the completed embedding journal records
 the subsequent authorization and results. No original/recovered/v1 files are changed and no remote publication is
-approved. The existing service still uses its v1 configuration.
+approved by that preparation step. Statements below about pending work refer to
+that historical handoff, not the current v2 deployment.
 
 ## Sources and rights
 
@@ -31,8 +66,8 @@ Self-RAG have version-specific CC BY 4.0 evidence; NetMHCpan and MixMHC2pred car
 CC BY-NC 4.0 notices in their actual PDFs. See [rights review](rag_distribution_review.md)
 for scope and attribution requirements. This is a noncommercial coursework candidate,
 not permission for commercial reuse. The manifest, notice inventory and rights
-review do not authorize remote image publication. Before release, ship full license
-texts and notices with the image/bundle and provide accessible service attribution
+review do not independently authorize new remote publication. The release image now
+ships full CC BY/CC BY-NC 4.0 license texts and notices and provides GET `/attribution`
 without changing `/chat` JSON. No independent supplements or datasets are included.
 
 ## Local preparation
@@ -127,8 +162,9 @@ Unchanged format-version-1 `bundle.json` embeds the preparation, completed journ
 full attribution inventory/license links, per-vector fingerprints and validation in
 its existing `embedding_model_provenance` string. It does not introduce extra files
 that evade the validator's exact inventory contract. The source PDF hashes, index
-files and metadata are pinned; packaged files are read-only. Service-facing notice
-presentation and full license-text packaging remain Step 4.7h release work.
+files and metadata are pinned; packaged files are read-only. Step 4.7h completed
+service-facing notice presentation and full license-text packaging in the image,
+without changing this bundle's inventory.
 
 SQLite `PRAGMA integrity_check`, explicit FTS5 integrity diagnostics on disposable
 copies, native `get` comparison of all vectors/text/metadata, **586 self-queries**,
@@ -155,7 +191,8 @@ Offline validation (no provider calls):
 .venv/bin/python -m pytest -m integration tests/test_corpus_v2.py tests/test_rebuild_v2.py
 ```
 
-After validation and explicit local Docker verification, the named-context handoff is:
+The approved bundle's named-context handoff (shown for reproduction, not executed
+by reading this document) is:
 
 ```sh
 docker buildx build --platform linux/amd64 \
@@ -164,12 +201,12 @@ docker buildx build --platform linux/amd64 \
   --load --tag veridex:phase04-v2-local .
 ```
 
-Prepared only, not executed. Review Docker/runtime validation for v2 document IDs,
-counts and selected PDF filenames first; current v1 assumptions must not be bypassed.
-Original, recovered and v1 deployment artifacts remain rollback references. The Corpus v2 artifact is ready for Step 4.7h local Docker verification, including
-explicit v2 runtime/spec compatibility and notice packaging. Linux/amd64 reopening
-of this new index has not yet been tested. Remote publication/deployment is still
-unauthorized.
+This build and Linux/amd64 reopening were subsequently verified in Step 4.7h.
+The current Dockerfile/runtime explicitly validate the v2 IDs, 586 chunks and selected
+PDFs. Original, recovered and v1 deployment artifacts remain rollback references;
+they are not acceptable substitutions for the v2 named context. A fresh build from
+current source is a new image; no additional build, publication or deployment is
+authorized by these instructions.
 
 ## Step 4.7h release handoff
 
@@ -177,5 +214,8 @@ Linux/amd64 reopening, native validation, non-root MCP/HTTP verification and not
 delivery are now recorded in [release_readiness_47h.md](release_readiness_47h.md).
 The source bundle digest and all protected artifacts remain unchanged. Attribution
 is generated into the image rather than added to the immutable bundle inventory.
-Historical statements above about pending Docker work describe the 4.7g handoff.
-Remote publication and native Cloud Run/live-provider acceptance remain unapproved.
+Historical statements about pending Docker work describe the 4.7g handoff. Subsequent
+approved publication, Cloud Run staging and public/live verification are summarized in
+[README.md](../README.md#cloud-run-deployment). Those approvals do not authorize
+redistributing this external bundle or publishing a new image. The local Step 4.12c
+MCP SDK logging change has not been deployed.

@@ -1,18 +1,48 @@
-# Current release: Corpus v2 (Step 4.7h)
+# Current build prerequisite: external Corpus v2 bundle
 
 The current Dockerfile/runtime consume only `.artifacts/versions/veridex-rag-v2-local`
 and its pinned bundle digest. The historical Step 4.5 commands below refer to v1;
 they require the corresponding historical checkout and are not current build commands.
-See [release_readiness_47h.md](release_readiness_47h.md) for current verification.
+See [release_readiness_47h.md](release_readiness_47h.md) for initial v2 verification.
+
+The source ZIP and Git checkout contain no PDFs, Chroma index or deployment bundle.
+Use the already deployed public `/chat` API without local artifacts, or obtain the
+exact approved external bundle through a separately authorized handoff before building.
+The public URL and contract are in [README.md](../README.md#api-contract).
+Required bundle files are `bundle.json`, `manifest.json`, five approved `papers/*.pdf`
+files and the complete `chroma/` directory. The pinned **SHA-256 of `bundle.json`** is
+`7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
+It describes `veridex_documents`, 586 chunks, `text-embedding-3-small`, dimension 1536.
+See [corpus_v2.md](corpus_v2.md) for provenance, rights and reproduction limits.
+
+From the repository root, choose the supplied bundle directory; its location may differ
+from the original ignored local path. These commands are instructions only and were
+not executed during documentation cleanup. The build needs Docker Buildx/BuildKit,
+Linux/amd64 support and access to pinned base images/dependencies, but no provider keys.
+Run `uv sync` first to install the locked local validation dependencies.
 
 ```sh
+RAG_BUNDLE_DIR="$PWD/.artifacts/versions/veridex-rag-v2-local"
 .venv/bin/python scripts/rebuild_corpus_v2.py validate \
+  --bundle "$RAG_BUNDLE_DIR" \
   --metadata-sha256 7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb
 docker buildx build --platform linux/amd64 \
-  --build-context rag=.artifacts/versions/veridex-rag-v2-local \
+  --build-context "rag=$RAG_BUNDLE_DIR" \
   --build-arg RAG_BUNDLE_SHA256=7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb \
   --load --tag veridex:phase04-v2-local .
 ```
+
+The named **`rag`** context must be the bundle directory itself, not its parent.
+The default build context intentionally excludes `data/`, `.artifacts/`, `.env`,
+Git metadata and private files. Do not weaken `.dockerignore`, substitute a v1 digest,
+or use `scripts/ingest.py` to satisfy a missing v2 prerequisite. The pinned digest,
+inventory and index checks fail closed; no build step re-ingests or re-embeds.
+Rebuilding current source includes the local MCP SDK logging fix and would produce
+a new image candidate; it does not reproduce the currently deployed image exactly.
+The serving image's runtime source was verified against commit `fc73f1a`; match the
+recorded source, Dockerfile and lock as well as the bundle when reproducing that release.
+Even then, byte-identical image reconstruction has not been demonstrated. See the
+[deployment provenance](../README.md#cloud-run-deployment) before choosing a source state.
 
 The verified stage explicitly selects the replacement PDF, validates 586 vectors,
 five v2 IDs, metadata, SQLite/FTS5, four text filters and all native self-queries.
@@ -33,15 +63,31 @@ that configuration return a safe 503 from `/attribution`, with existing APIs int
 No POST/update mechanism exists. [Current notice](rag_attribution_v2.json) is a
 review copy; the build generates notices from the digest-validated bundle itself.
 
+## Entrypoints and private writable index
+
+The actual Docker entrypoint is
+`/opt/venv/bin/python /app/scripts/container_entrypoint.py`. It calls the existing
+deployment bootstrap to validate the immutable bundle and prepare a private writable
+Chroma copy under `/tmp`, then execs `/app/scripts/serve_api.py`. That runner binds
+`0.0.0.0:$PORT`, uses one Uvicorn worker and preserves the 0.5-second HTTP drain and
+eight-second application cleanup budget. UID/GID is `10001:10001`; canonical corpus
+files remain read-only. No new runtime path or automatic indexing is introduced.
+For a direct local API process, use `uv run python scripts/serve_api.py` after explicitly
+configuring valid corpus paths and runtime credentials. Default local paths and the
+tracked sample manifest are historical v1 configuration, not v2 container bootstrap.
+The empty root `main.py` was unused and is removed.
+
 NetMHCpan/MixMHC2pred retain noncommercial conditions and third-party exclusions.
 This local release is not clearance for arbitrary commercial redistribution.
-Remote registry publication and Cloud Run deployment require separate authorization.
+Any new remote registry publication or Cloud Run deployment requires separate authorization.
 
 ---
 
-# Step 4.5 local Linux/amd64 image
+# Historical Step 4.5 local Linux/amd64 image (Corpus v1)
 
-This image is a local/internal candidate. Do not push it or use a remote builder:
+The following commands and measurements are a historical record, not current v2
+setup instructions. They require the historical Dockerfile/runtime checkout.
+This image was a local/internal candidate. Do not push it or use a remote builder:
 PDF distribution authorization and historical embedding-model identity remain
 unresolved. Cloud Run IAM, session ownership, resources, and deployment remain
 separate work. No unauthenticated public access is configured by this workflow.
@@ -150,9 +196,9 @@ The immutable bundle retains its historical Linux-unverified metadata; this
 separate image verification records the successful Linux test without rewriting it.
 
 
-## Current release candidate (Step 4.7d)
+## Historical release candidate (Step 4.7d, Corpus v1)
 
-The Step 4.5 measurements above are historical. The current-code local candidate is
+The Step 4.5 measurements above are historical. The candidate at Step 4.7d was
 `veridex:phase04-47d`; its identity, 32 offline TCP passes, native index checks,
 non-root production startup and shutdown/resource results are recorded in
 [release_readiness_47d.md](release_readiness_47d.md). It remains local/internal.
