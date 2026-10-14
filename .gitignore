@@ -183,3 +183,6 @@ docs/_build/
 *.mo
 *.pot
 .scrapy/
+
+# Private coursework ZIP artifacts; supplied only through the rag named context
+/submission_artifacts/

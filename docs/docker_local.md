@@ -5,7 +5,10 @@ and its pinned bundle digest. The historical Step 4.5 commands below refer to v1
 they require the corresponding historical checkout and are not current build commands.
 See [release_readiness_47h.md](release_readiness_47h.md) for initial v2 verification.
 
-The source ZIP and Git checkout contain no PDFs, Chroma index or deployment bundle.
+The original source ZIP (source-only) and Git checkout contain no PDFs, Chroma index or
+deployment bundle. An optional private coursework ZIP supplies the same approved
+bundle under `submission_artifacts/veridex-rag-v2-local/`; its notice stays outside
+the immutable bundle. Never attach the corpus automatically to a public release.
 Use the already deployed public `/chat` API without local artifacts, or obtain the
 exact approved external bundle through a separately authorized handoff before building.
 The public URL and contract are in [README.md](../README.md#api-contract).
@@ -63,6 +66,16 @@ to it with an HTTP `Link` header; the exact JSON response remains unchanged.
 that configuration return a safe 503 from `/attribution`, with existing APIs intact.
 No POST/update mechanism exists. [Current notice](rag_attribution_v2.json) is a
 review copy; the build generates notices from the digest-validated bundle itself.
+
+For a current production-equivalent container run with runtime-only credentials,
+localhost port binding and health/readiness/chat checks, follow the
+[README workflow](../README.md#production-equivalent-corpus-v2-container).
+It requires the approved bundle: an external handoff for a source-only ZIP, or
+the included `submission_artifacts/veridex-rag-v2-local/` in the private coursework
+ZIP. Use that directory as the `rag` named context. The default Docker context
+excludes `submission_artifacts/`; global corpus/security exclusions remain intact.
+The historical `veridex:phase04-local` smoke examples below are not substitutes
+for that v2 run procedure.
 
 ## Entrypoints and private writable index
 
