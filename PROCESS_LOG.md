@@ -95,6 +95,7 @@
 
 - Final offline results: 462 ordinary tests passed (47 integration tests deselected); 33 Docker TCP end-to-end and 2 Docker observability tests passed against the built image; Ruff and `git diff --check` passed. With the filter disabled, 8 of the 11 new framework-logging tests failed, confirming they detect the problem.
 - Live private-staging tests (each run once, individually approved): direct answer, same-session memory, and session isolation passed. Evidence retrieval was a partial pass (citations correct, but the Self-Route mechanism was missing). Workspace chaining, Evidence plus Web in one turn, web search, and safe failure on a missing document all passed, with the real MCP calls logged under one correlation ID per turn.
+- Public activation preserved revision, traffic and scaling. One anonymous chat smoke test returned HTTP 200 with the exact JSON contract in 2.805 seconds; logs recorded one completed model call and no MCP dispatch or error events for that turn.
 - The first web-search test returned HTTP 500 on the uninstrumented revision. Logs showed no instance replacement or web-tool error, so the cause remains unconfirmed; the retry on the instrumented revision passed.
 - Verified that the runtime files in the published image hash identically to commit `fc73f1a`. The image was built before that commit existed, so this shows matching contents, not a reproducible build. All 75 protected corpus and artifact records remained unchanged throughout.
 
@@ -104,7 +105,7 @@
 - Anonymous session IDs are not authenticated, so callers using the same ID share history.
 - A provider timeout still produces HTTP 500 rather than a graceful limit message.
 - Tool arguments and results are deliberately not logged, so dependent chaining is supported by strong circumstantial evidence rather than captured data flow.
-- Public grading access is prepared but not yet enabled.
+- Public grading access is enabled through a service-level `allUsers` Invoker grant. Revocation is planned for December 14, 2026, but is not scheduled.
 
 ---
 
@@ -114,7 +115,7 @@ With AI assistance, I developed Veridex from October 8 to 13, 2026, in five phas
 
 In Phase 04, I turned the agent into a deployable service. A FastAPI `POST /chat` endpoint gained strict validation, request and agent budgets, deadlines, and cancellation repair. A non-root Docker image bundled a digest-validated index. A licensing review led to replacing one paper and rebuilding the corpus as v2. Deployment then proceeded through small, approved gates: private Artifact Registry publication, a private Cloud Run service, and zero-traffic revisions verified through tagged URLs.
 
-An unexplained HTTP 500 in live testing exposed a diagnostic gap. Sanitized correlation logging, followed by a framework-log hardening fix, made later live tests show which MCP tools actually ran. A configuration-only timeout increase was validated on a separate revision before traffic was shifted to it. Public grading access remains a final, separately approved step.
+An unexplained HTTP 500 in live testing exposed a diagnostic gap. Sanitized correlation logging, followed by a framework-log hardening fix, made later live tests show which MCP tools actually ran. A configuration-only timeout increase was validated on a separate revision before traffic was shifted to it. After separate approval, I enabled public grading access and verified one anonymous chat turn; revocation remains a separately approved action.
 
 ## AI Tools & Prompts
 

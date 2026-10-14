@@ -1,6 +1,13 @@
+> Current status (2026-10-13): service-level `allUsers` Invoker access is enabled;
+> Invoker IAM enforcement remains enabled. One anonymous chat smoke test passed.
+> Provider protections are manually confirmed: OpenAI USD 5 enforced organization
+> limit; Tavily Free plan, PAYG disabled. The GCP USD 5 budget is alerts-only.
+> Planned revocation: December 14, 2026, manual/not scheduled. Anonymous session
+> collisions and noncommercial corpus restrictions remain applicable.
+
 # API security and public grading limits
 
-Step 4.7c targets the handout-compatible unauthenticated grading URL, pending
+Historical Step 4.7c planning targeted the handout-compatible unauthenticated grading URL, pending
 explicit deployment approval. No cloud access policy has changed. POST `/chat`
 retains `query` and `session_id`, returning only `response`. No mandatory auth
 header, cookie, server-issued token or extra field is introduced.

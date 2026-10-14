@@ -7,10 +7,11 @@ servers**: local semantic retrieval, live web search, and read-only document acc
 It cites document IDs and PDF pages, keeps conversation memory per session, and is
 served over HTTP as one `POST /chat` endpoint on Google Cloud Run.
 
-> **Deployment status (2026-10-13):** the Cloud Run service is deployed and **private**
-> (only IAM-authenticated callers can reach it). Public grading access has **not** been
-> enabled yet; that is a separate, explicitly approved step (see
-> [Public grading access](#public-grading-access)).
+> **Deployment status (2026-10-13):** the Cloud Run service is publicly invokable.
+> Public API: **https://veridex-staging-200331083905.us-west1.run.app/chat**
+> Anonymous smoke test: HTTP 200 with the exact JSON response contract. The planned
+> public window ends December 14, 2026; revocation is manual and not scheduled.
+> Use nonconfidential inputs; caller-selected session IDs do not establish ownership.
 
 ## Contents
 
@@ -71,6 +72,10 @@ flowchart LR
 | Workspace | `veridex.mcp.servers.workspace` | `list_documents()` | Lists the manifest-approved PDFs and their identifiers | none |
 | Workspace | `veridex.mcp.servers.workspace` | `read_document(document_id, start_page=1, end_page=None, max_chars=12000)` | Reads up to 10 pages of an approved PDF, with bounded output | none |
 
+The three MCP servers are student-authored using FastMCP. Workspace provides direct
+manifest-restricted PDF access; Evidence adds indexed scientific retrieval beyond
+the two-server minimum, while Web Search supplies external information.
+
 Each server is a separate process with its own allowlisted environment. Only Evidence
 receives the OpenAI key, and only Web Search receives the Tavily key. Every server
 returns a fixed, sanitized error message on failure. Workspace rejects anything outside
@@ -88,7 +93,7 @@ flowchart TD
     decide -->|no| answer(["Final answer → {response}"])
     decide -->|yes| tcheck{"Before tools:<br/>≤ 8 tool calls per turn"}
     tcheck -->|no| limit
-    tcheck -->|yes| tools["Tool node: dispatch through<br/>MCP registry (logged per call)"]
+    tcheck -->|yes| tools["Tool node: MCP tools/call<br/>through registry (logged per call)"]
     tools -->|"result, or a sanitized<br/>error message"| mcheck
     model -. "120 s turn deadline,<br/>recursion limit 12" .-> limit
 ```
@@ -141,11 +146,10 @@ Other endpoints:
 - `GET /ready` returns `{"status":"ready"}` once all MCP servers and tools are up.
 - `GET /attribution` returns the corpus licensing notices.
 
-Example call (add `-H "Authorization: Bearer $(gcloud auth print-identity-token)"` while
-the service is private):
+Example anonymous call to the public grading endpoint:
 
 ```sh
-curl -sS -X POST "$SERVICE_URL/chat" -H 'Content-Type: application/json' \
+curl -sS -X POST "https://veridex-staging-200331083905.us-west1.run.app/chat" -H 'Content-Type: application/json' \
   -d '{"query": "List the available documents.", "session_id": "demo-123"}'
 ```
 
@@ -232,8 +236,9 @@ uv run ruff check . && uv run ruff format --check .
 
 Latest verified results (2026-10-13):
 
-- **Offline:** 462 passed (47 integration tests deselected), 33 Docker TCP end-to-end tests
-  and 2 Docker observability tests passed, and Ruff is clean.
+- **Offline (Step 4.12c):** 467 passed (47 integration tests deselected).
+  Prior Docker verification passed 33 TCP end-to-end tests and 2 observability tests.
+  Ruff is clean; the current local SDK logging safeguard has not been Docker-tested.
 - **Live private-staging tests** (each run once):
 
 | Test | What it checks | Result |
@@ -249,7 +254,7 @@ Latest verified results (2026-10-13):
 
 ```mermaid
 flowchart LR
-    dev["Developer workstation<br/>docker buildx · gcloud"] -->|"push image (linux/amd64)"| ar[("Artifact Registry<br/>us-west1 · private repo")]
+    dev["Developer workstation<br/>Docker · same OpenAI backend"] -->|"push image (linux/amd64)"| ar[("Artifact Registry<br/>us-west1 · private repo")]
     ar -->|"pinned digest"| svc
     subgraph gcp["Google Cloud project · us-west1"]
         svc["Cloud Run service<br/>Gen2 · 1 vCPU / 2 GiB · concurrency 1<br/>min 0 / max 1 instances · timeout 300 s"]
@@ -258,11 +263,15 @@ flowchart LR
         svc --> logs["Cloud Logging<br/>sanitized events"]
         budget["USD 5 monthly<br/>budget alert"] -.-> gcp
     end
-    caller["Caller"] -->|"HTTPS (IAM invoker check)"| svc
+    env["Local .env (development only)"] --> local["Local API + MCP processes"]
+    vars["Non-secret shell variables"] -->|"--set-env-vars"| svc
+    sm -->|"--set-secrets: numeric refs<br/>runtime-only environment values"| svc
+    svc --> live["Public live URL<br/>POST /chat"]
+    caller["Caller"] -->|"HTTPS (allUsers Invoker grant)"| live
     svc --> providers["OpenAI · Tavily"]
 ```
 
-**Current private deployment** (verified 2026-10-13):
+**Current deployment** (verified 2026-10-13):
 
 | Item | Value |
 |---|---|
@@ -272,7 +281,7 @@ flowchart LR
 | Image | `us-west1-docker.pkg.dev/<PROJECT_ID>/veridex/veridex@sha256:4ed6440e87f2f05816a54126218b3ce0c34ed906e2ae8ff425db36a655ea0b23` |
 | Corpus bundle SHA-256 | `7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb` |
 | Runtime settings | 1 vCPU / 2 GiB, concurrency 1, max 1 instance, min 0, startup probe `/ready` (240 s), `PROVIDER_TIMEOUT_SECONDS=45` (source default 30) |
-| Access | Private: IAM invoker required, no public binding |
+| Access | Public: service-level `allUsers` Invoker binding; Invoker IAM check remains enabled |
 
 **Source provenance:** deployment verification matched the runtime source in the image
 to commit `fc73f1a`, including the whole `src/veridex` tree. The image was built
@@ -313,11 +322,18 @@ rather than this summary.
 
 ### Public grading access
 
-The assignment's example deploys with unauthenticated access. Veridex was staged
-privately first. Public access means granting `roles/run.invoker` to `allUsers` for an
-approved grading window, then revoking it afterwards. **As of this README it has not
-been granted.** The prepared commands are in
-[`docs/cloud_run_commands.md` §7](docs/cloud_run_commands.md#7-public-grading-gate--prepared-not-executed).
+The service was staged privately and then explicitly approved for public grading.
+Only `roles/run.invoker` for `allUsers` was added at service scope; revision, traffic,
+scaling and secrets were unchanged. One anonymous `POST /chat` returned HTTP 200 in
+2.805 seconds with `{"response":"Veridex public API is working."}`; sanitized logs
+showed one completed model call and no MCP dispatch or error events for that turn.
+The planned availability window is approximately October 14–December 14, 2026.
+
+Revocation is not scheduled. After grading, the operator must separately authorize
+and execute the service-level binding removal, verify IAM enforcement and inherited
+access, and confirm anonymous requests are denied. Organization IAM inspection was
+not permitted, so inherited organization-level access is not exhaustively verified.
+Commands are in [`docs/cloud_run_commands.md`](docs/cloud_run_commands.md).
 
 ## Costs
 
@@ -326,9 +342,14 @@ been granted.** The prepared commands are in
   - Artifact Registry stores about 0.28 GB.
   - Secret Manager holds two active secret versions.
   - A **USD 5 monthly budget alert** is configured. It is an alert, **not a spending cap**.
+- **Provider-account safeguards (manually confirmed):** OpenAI organization monthly
+  limit USD 5 with hard enforcement enabled; Tavily Free Researcher plan with 1,000
+  monthly credits and PAYG disabled. These settings were not independently inspected
+  through provider dashboards. OpenAI enforcement can slightly overshoot and limits
+  can interrupt grading; an organization limit also covers unrelated project usage.
 - **OpenAI:** each chat turn makes up to 6 `gpt-5` generation requests (each capped at 4,096
   completion tokens). Each `search_evidence` call also makes an embedding request.
-- **Tavily:** each `search_web` call is one paid search request.
+- **Tavily:** each `search_web` call consumes one basic-search credit.
 - **Public access:** while the service is public, anyone with the URL can trigger these paid
   calls. Throughput is limited to one turn at a time with no queue, but provider spend is not
   capped by the service itself.
@@ -394,6 +415,23 @@ tests/            offline suite; tests/docker/ holds the mounted offline contain
 docs/             architecture, security, corpus, Docker and Cloud Run records
 Dockerfile        multi-stage linux/amd64 image, non-root (UID 10001)
 ```
+
+## Submission
+
+Submit the live base URL `https://veridex-staging-200331083905.us-west1.run.app` in
+the Brightspace URL field, the clean source ZIP, `PROCESS_LOG.md`, and `README.md`
+as required by the handout. README and PROCESS_LOG are also included at the ZIP root.
+The API path is `/chat`; keep the service available until grades are posted. The
+planned December 14 revocation date must be reviewed if grading is still ongoing.
+The ZIP excludes credentials, environments, PDFs and indexes; see Corpus v2 setup
+above for the separately provisioned deployment bundle.
+Package reviewed source, tests, scripts, lock/project files, README, PROCESS_LOG,
+diagrams and license notices at the ZIP root with their repository-relative paths.
+Only `data/samples/` catalog/evaluation JSON belongs in the source package; exclude
+private development notes, Git history, local tooling directories, caches and generated
+artifacts. `tests/test_submission_packaging.py` checks the source inventory and external
+corpus prerequisites. A new ZIP must be generated and verified after final source review;
+an older archive is not automatically updated by editing the working tree.
 
 ## Further documentation
 

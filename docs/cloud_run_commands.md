@@ -1,3 +1,12 @@
+> Current public-access status (2026-10-13): Step 4.10c executed only the service-level
+> allUsers Invoker grant on veridex-staging. Invoker IAM checks remain enabled;
+> timeout45 receives 100% of traffic, min0/max1 unchanged. Anonymous health and one
+> chat smoke test passed. Historical approval gates below are retained as records.
+> Planned revocation date: December 14, 2026; no automation is scheduled.
+>
+> Prepared revocation (NOT EXECUTED; requires approval):
+> `gcloud run services remove-iam-policy-binding veridex-staging --project=zeta-store-511505-i7 --region=us-west1 --account=doeunkim@usc.edu --member=allUsers --role=roles/run.invoker`
+
 > Step 4.8.1b now confirms project `zeta-store-511505-i7`, USC bootstrap identity,
 > and existing billing. Use the separately gated A–E blocks in
 > [gcp_provisioning_review_481b.md](gcp_provisioning_review_481b.md) for provisioning.
