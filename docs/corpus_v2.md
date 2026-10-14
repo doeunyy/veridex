@@ -7,7 +7,12 @@ The deployed public service uses Corpus v2:
 Its JSON contract remains `{"query": string, "session_id": string}` →
 `{"response": string}`. Using that service does not require local corpus files.
 
-The repository and source ZIP omit all PDFs, indexes and the approved external bundle.
+The repository and original source-only ZIP omit all PDFs, indexes and the approved
+external bundle. The optional private coursework packaging mode supplies exactly
+its 12 files under `submission_artifacts/veridex-rag-v2-local/`, with
+[CORPUS_LICENSE_NOTICE.md](../CORPUS_LICENSE_NOTICE.md) at the archive root.
+The immutable digest and validation contract are unchanged. This packaging exception
+does not authorize Git inclusion or automatic public-release publication.
 Rebuilding a v2 container requires a separately authorized handoff of
 `.artifacts/versions/veridex-rag-v2-local` (or the same bundle at an external path):
 `bundle.json`, `manifest.json`, five `papers/*.pdf` files and the complete `chroma/`
