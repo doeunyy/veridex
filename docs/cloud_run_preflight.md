@@ -1,0 +1,392 @@
+> Current deployment (2026-10-13): the approved public service is
+> `veridex-staging-mcp-log-35bbef6` at 100% normal traffic, built from `35bbef6`.
+> Digest: `sha256:8657fdecc15737cc29abec5dfdd7f79052332f3065f03e78678044f80cd4a391`.
+> Timeout45 remains at 0% for rollback. Provider timeout 45s, retries 0; min0/max1.
+> OpenAI's USD 5 enforced limit and Tavily Free/PAYG-disabled settings were manually
+> confirmed; the GCP USD 5 budget is alerts-only. Corpus v2 notices and noncommercial
+> restrictions remain applicable. Earlier dated planning/approval sections below
+> are historical records. See [README](../README.md#cloud-run-deployment) for current
+> provenance and [commands](cloud_run_commands.md) for prepared rollback/revocation.
+
+# Phase 04 Step 4.7: Cloud Run deployment preflight
+
+Planning review: 2026-10-12. No cloud resources, IAM, billing, images, or remote
+artifacts were changed. Step 4.8 is **not authorized**. Proposed commands are in
+[cloud_run_commands.md](cloud_run_commands.md); they are review material, not an
+executable provisioning script.
+See [Step 4.7b final approval checklist](deployment_approval_checklist.md) for the
+subsequent configuration-history investigation and conditional access/corpus paths.
+
+## Proposed initial configuration
+
+| Setting | Proposal |
+| --- | --- |
+| Region | `us-west1` (Oregon): matches the handout recommendation and Western US course context. Both it and `us-central1` use Tier 1 pricing; keep registry/service together. Confirm project/location policy before provisioning. |
+| Service | `veridex-staging` (proposed/unapproved), one ingress container, second-generation execution environment |
+| Worker/processes | Existing runner: one Uvicorn worker, three persistent STDIO MCP children, four discovered tools |
+| Resources | 1 vCPU / 2 GiB, subject to native measurements; startup CPU boost enabled |
+| Scaling | Service-level minimum 0, maximum 1; revision maximum 1 as an additional safeguard; no session affinity |
+| Concurrency | Cloud Run 1; application active requests 1, waiting requests 0 |
+| Deadline | Proposed Cloud Run 300 seconds; ASGI 180 seconds, Agent 120 seconds, provider 30 seconds / MCP 45 seconds |
+| Startup probe | HTTP/1 GET `/ready`, port 8080, initial delay 0, period 10 seconds, timeout 3 seconds, failure threshold 24 |
+| Liveness | Initially omit a restart-triggering liveness probe; `/health` remains available for authenticated diagnostics. Add only after measuring event-loop responsiveness under load. |
+| Access | Grading target: internet-reachable unauthenticated invocation, pending explicit approval of public admission and anonymous-session limitations. Stage IAM-private first; public grant is a separate gate. |
+| CPU/billing | Request-based (`--cpu-throttling`); no required work scheduled while idle |
+| Secrets | Two Secret Manager environment references pinned to numeric versions; never build arguments |
+| Storage | Immutable canonical bundle, private writable `/tmp` Chroma copy; no ingestion or provider calls during artifact validation |
+
+The application contract remains POST `/chat` with required strict strings
+`query` (nonblank, at most 10,000 characters) and `session_id` (nonblank, at most
+128 characters), no extra fields, returning exactly `{"response":"..."}`.
+Body cap remains 65,536 bytes. Health/readiness do not make provider calls.
+Application validation errors are 422, oversized bodies 413, invalid length
+headers 400, capacity exhaustion 429, HTTP/queue deadline 504, unavailable service
+503, and safe internal failures 500. Platform IAM/routing errors can have different
+bodies; do not promise the application error schema for every platform failure.
+Agent turn timeout has its existing safe fallback behavior, rather than necessarily
+producing an HTTP 504. Cancellation must not be translated into a successful turn.
+Cloud Run's [request timeout](https://docs.cloud.google.com/run/docs/configuring/request-timeout)
+closes the connection with 504 without terminating the instance; code can continue.
+The shorter application deadline and disconnect cancellation remain necessary.
+Do not automatically retry POST `/chat`: a failed connection can leave a completed
+or partially completed turn, and this contract has no idempotency key.
+
+## Contract and runtime review
+
+The image targets Linux/amd64 and runs UID/GID 10001. The exec entrypoint starts
+`/opt/venv/bin/python /app/scripts/serve_api.py`; the runner listens on `0.0.0.0`
+and configured `PORT`. Cloud Run supplies `PORT` with `--port=8080`; do not set that
+reserved environment variable separately. Cloud Run terminates TLS; the container
+serves HTTP/1. Subprocesses use `sys.executable` and `/app/src`, not a macOS venv.
+
+Cloud Run's [container contract](https://docs.cloud.google.com/run/docs/container-contract)
+requires Linux x86_64 support, startup within four minutes, and provides a
+10-second SIGTERM period. Its writable filesystem is memory-backed and ephemeral.
+Platform pending queues are outside the application deadline. Maximum-instance
+settings can be temporarily exceeded; they do not ensure a single permanent process. The per-instance saver is not durable or user-owned.
+
+Startup validates bundle hashes, dependencies, PDFs, collection and SQLite/FTS
+structure, prepares private Chroma storage, then initializes MCP in the same
+lifespan task that later exits it. Readiness is published only after the three
+servers and four tools are usable. Readiness does not certify working API keys,
+provider quotas, semantic embedding compatibility, or live provider availability.
+The [HTTP startup probe](https://docs.cloud.google.com/run/docs/configuring/healthchecks)
+uses the existing readiness route without IAM headers inside the container; it
+does not require public invocation. The proposed 240-second window is conservative
+even though current health-check documentation permits longer probe windows.
+
+Uvicorn drains for 0.5 seconds before the single eight-second lifespan shutdown
+budget. Readiness is withdrawn and new work rejected; pending turns are canceled
+with history repair before MCP teardown. This leaves about 1.5 seconds of platform
+margin. Synchronous PDF/Chroma threads cannot be directly interrupted; hard kill,
+OOM, or cancellation-resistant work prevents guaranteed history repair. No MCP
+children exist during pre-server bundle preparation, which has no dedicated
+SIGTERM cleanup handler. The whole instance filesystem is discarded on termination.
+
+Request-based CPU suits idle STDIO readers, but does not promise progress for
+background work after an HTTP response. Measure cancellation and connection health
+after idle throttling; switch billing mode only if required and approved.
+[Startup boost](https://docs.cloud.google.com/run/docs/configuring/services/cpu)
+temporarily raises the proposed 1 vCPU to 2, including ten seconds after startup;
+boosted allocation is billed. Three Python imports share this CPU allocation.
+FastMCP update-check/telemetry behavior should be audited before deployment;
+arbitrary parent environment switches are not forwarded by the scoped MCP config.
+Do not assume setting an undocumented environment flag disables child networking.
+
+No fatal container-contract incompatibility was identified. Operational risks:
+45-second MCP initialization timeouts on a small CPU allocation, image/import
+weight, memory-backed writes, bounded-but-retained sessions, provider latency,
+and interrupted synchronous work. Step 4.7c added local Agent/provider/retention controls; cloud configuration remains unexecuted.
+
+## Infrastructure and identities
+
+Dependency order: approved project + billing + budget -> enabled APIs -> regional
+Docker repository + runtime service account + two empty secrets -> secret versions
+and scoped IAM -> approved image upload -> private service -> approved invoker.
+Select existing project/billing where appropriate; organization policy, quotas,
+project number, principals, billing currency, and location restrictions are unknown.
+
+| Identity | Minimum planned permissions/scope |
+| --- | --- |
+| Runtime `veridex-runtime` | `roles/secretmanager.secretAccessor` on each of the two secrets only; no Editor, Owner, registry writer, deployment, billing, or service-account keys |
+| Routine deployer | `roles/run.developer` on existing service, `roles/iam.serviceAccountUser` on runtime SA, `roles/artifactregistry.reader` on repository |
+| Local image publisher | `roles/artifactregistry.writer` on repository; local user credentials or federation, no exported SA key |
+| Access administrator | Permission to get/set service IAM policy; `roles/run.admin` scoped to service after creation, or reviewed custom policy role. Keep separate from routine deployer. |
+| Grader/trusted invoker | `roles/run.invoker` on this service only; decide exact principal before grant |
+| Secret operator | `roles/secretmanager.secretVersionAdder` on those secrets; enters values directly using an approved operator workflow, never through this agent |
+| Bootstrap administrator | Temporary resource-specific provisioning authority: Service Usage Admin, Artifact Registry Admin, Service Account Admin, Secret Manager Admin, and Cloud Run Admin as needed to create resources/manage initial policy; project IAM admin only if required to grant project roles. Existing administrator performs this, not runtime SA. Narrow/revoke bootstrap grants afterward. |
+| Billing/project operator | Project Creator on approved parent if creating project; Billing Account User plus project billing assignment authority if linking billing; budget-specific permissions for approved budget scope |
+
+New service creation requires project-level creation authority before a service
+exists. Routine updates can subsequently be narrowed to that service. Initial
+`--no-allow-unauthenticated` policy management requires the access administrator,
+not just Cloud Run Developer. See [deployment IAM](https://docs.cloud.google.com/run/docs/deploying).
+Cloud Run's service agent handles image pulling; do not give the application SA
+registry permissions for this purpose. A cross-project registry would require
+additional service-agent reader grants and is not proposed.
+
+Use [Secret Manager references](https://docs.cloud.google.com/run/docs/configuring/services/secrets)
+`OPENAI_API_KEY=veridex-openai-api-key:<numeric-version>` and
+`TAVILY_API_KEY=veridex-tavily-api-key:<numeric-version>`. Automatic replication is
+proposed unless residency policy requires a specific location. Confirm enabled
+versions and access permissions without accessing payloads. Rotate by adding a
+version and deploying an approved reference update. Cloud Run resolves env secrets
+at instance startup. No credentials belong in image layers, command arguments,
+source files, logging, or this plan. Leave optional tracing credentials unset.
+
+Explicit nonsecret settings: `APP_ENV=production`, `LOG_LEVEL=INFO`, the five API
+limits in the command plan, approved `OPENAI_MODEL` and `OPENAI_EMBEDDING_MODEL`.
+The existing defaults are `gpt-5` and `text-embedding-3-small`; deployment must
+select/approve these explicitly. The latter is not attested as the historical
+index model. Bundle paths/collection/digest are set and validated by bootstrap;
+do not override them or point at `data/index`. Port and Settings values still need
+operator review; successful readiness cannot replace live-provider validation.
+
+## Costs and safeguards
+
+USD list-price illustration, Tier 1 us-west1/us-central1, request-based 1 vCPU / 2 GiB, no discounts,
+excluding startup boost, startup/shutdown duration, networking, logs, storage,
+providers, retries, and tax. Active rate: $0.000024/vCPU-second plus
+$0.0000025/GiB-second = $0.000029/second; $0.40/million requests.
+[Cloud Run pricing](https://cloud.google.com/run/pricing) applies monthly free
+allowances across the billing account: 180,000 vCPU-seconds, 360,000 GiB-seconds,
+and two million requests. Other projects can consume these allowances.
+
+| Workload | Gross active compute + request charge | With otherwise unused monthly allowances |
+| --- | --- | --- |
+| 1,000 turns, 30 billed seconds each | $0.8704 | $0 for these items |
+| 1,000 turns, 120 billed seconds each | $3.4804 | $0 for these items |
+| 10,000 turns, 30 billed seconds each | $8.704 | $3.48 |
+| One continuously busy instance for 30 days | $75.17 compute, plus requests | About $69.95 compute |
+
+These are workload examples, not quotes or spending ceilings. Min 0 avoids reserved
+idle-instance charges but permits cold starts. Maximum 1 limits capacity, not total
+turns, token spending, retained sessions, or temporary scaling overshoot.
+
+[Artifact Registry](https://cloud.google.com/artifact-registry/pricing) storage is
+approximately $0.10/GiB-month above the billing account's 0.5 GiB free allowance.
+A hypothetical 0.8 GiB stored image is about $0.03/month with unused allowance,
+$0.08 without it. Actual compressed layer storage must be measured; local image
+size is not registry billable size. Keep a rollback version and review cleanup
+policies separately; no automatic deletion is proposed.
+[Secret Manager](https://cloud.google.com/secret-manager/pricing): two active
+automatically replicated versions are $0.12/month before the six-version free
+allowance; accesses are $0.03/10,000 beyond the 10,000-access allowance. Disabled
+versions also count as active for storage billing. Initial local-build publication
+uses no Cloud Build. Optional [Cloud Build](https://cloud.google.com/build/pricing)
+e2-standard-2 is $0.006/minute before applicable promotional allowances; ten minutes
+is $0.06. Cloud Build would need its own explicit build identity and controlled RAG
+staging workflow, and is deferred. Internet egress and Cloud Logging can add costs.
+
+OpenAI generation/query embeddings and Tavily searches are separate bills, likely
+the principal variable cost. The 120-second turn cap and retries are not token or
+spend caps. Repeated turns/history, multiple tool rounds, and continuous traffic
+can spend money indefinitely. Approve model pricing, output-token limits, retry
+policy, per-principal quotas and provider-side controls before broad access.
+
+Recommend an alerts-only project budget of $5/month (50%, 80%, 100%, forecast
+100%) with approved owner notifications, and separately consider a $5/month Cloud
+Run spend cap if available to this billing account. Ordinary
+[budget alerts](https://docs.cloud.google.com/billing/docs/how-to/budgets) do not
+stop usage. Current [spend-cap documentation](https://docs.cloud.google.com/billing/docs/how-to/budgets-spend-caps)
+includes Cloud Run, but caps are scoped to one project/service, use gross estimates,
+can overshoot due to reporting latency, and allow in-flight work to finish. They
+exclude external providers and other service costs; they are not a hard total-dollar
+ceiling. A cap can interrupt grading and resets monthly; approval is required.
+
+## Assignment-aligned public demo and implemented limits
+
+The handout findings supplied in Step 4.7c establish a live Cloud Run URL, exact
+POST schema, arbitrary reasonable queries, real MCP discovery/invocation, and
+at least two turns sharing a session ID. Recycling durability is not required.
+The instructor example uses `--allow-unauthenticated`; it is an example rather
+than an authentication prohibition. Recommend public grading admission with no
+mandatory extra headers/fields, pending explicit deployment approval. Three
+submission diagrams, README finalization and PROCESS_LOG narrative remain Step 4.11.
+The raw handout is not stored in this repo; this review uses the supplied findings.
+
+Initial staging remains IAM-private. Public admission is a separate prepared
+function, not part of setup/deploy blocks. Anonymous IDs are conversation selectors,
+not verified ownership: two callers using the same ID share history. No cross-user
+confidentiality is claimed. Do not submit private data or credentials to this demo.
+Random IDs reduce collisions but are not an authorization policy. No mandatory
+header, server-issued token or new JSON field was introduced.
+
+Implemented Step 4.7c settings: active 1/waiting 0; eight tool calls and six model
+calls per turn; 64,000 serialized message characters before each model call;
+4,096 provider completion tokens per generation request; provider timeout 30s,
+OpenAI retries 0. Tavily retains its existing 20s outer deadline and one SDK POST
+without an application retry loop. MCP 45s / Agent 120s / HTTP 180s and shutdown
+8s remain. All three MCP servers/tools and LangGraph selection remain real.
+
+At most 128 sessions are retained. Admission lazily deletes only idle sessions
+unused for 30 minutes, including their checkpoints and lock records; waiting and
+active turns reserve their sessions. Full capacity returns safe HTTP 429 without
+LRU eviction. Retain the six most recent complete human turns, compacting the
+existing default InMemorySaver to one latest checkpoint through public saver APIs
+under the same-session lock. Active-turn intermediate checkpoints/repair remain
+intact until turn exit. The default saver and locks are cleared after shutdown
+drain. Custom checkpoint backends require their own retention/transaction policy;
+compaction intentionally applies only to the exact default InMemorySaver type.
+
+Two successive normal turns preserve memory, distinct non-colliding IDs remain
+separate, and active sessions cannot expire. History beyond six turns or idle TTL
+can be forgotten. Input character bounds are conservative, not exact tokenizer
+counts; tool schemas/provider overhead and embedding input splitting add cost.
+An eight-call tool ceiling is not eight HTTP requests: each accepted tool can make
+SDK requests, and retries can be explicitly reconfigured. Six generation calls
+request at most 24,576 completion tokens by default, not an exact dollar charge.
+No durable rate counter or aggregate spend ceiling is implemented. Restarted or
+additional instances reset limits, and sustained traffic still spends money.
+Keep provider/account controls, budget notifications, approved expiry and an
+emergency operator revocation plan; do not describe maximum 1 or alerts as a cap.
+
+## Historical v1 corpus and embedding gates (superseded by v2)
+
+The historical v1 local bundle is `.artifacts/versions/veridex-rag-v1-local`, pinned
+`bundle.json` SHA-256
+`6fd0cb8b83f32e94beacb4788df1dcd251f662007264d5aa698c4c9b835a29e8`.
+It has five PDFs, 615 preserved 1536-dimensional vectors, and validated recovered
+text/SQLite/FTS. It remains local/internal, not remotely authorized.
+
+| Document | Evidence and remaining decision |
+| --- | --- |
+| RAG 2020 | [arXiv v4](https://arxiv.org/abs/2005.11401v4) links its nonexclusive distribution grant to arXiv; downstream bundle permission is not established. Local exact-file modification also needs review. |
+| ReAct 2022 | [arXiv v3](https://arxiv.org/abs/2210.03629v3) links CC BY 4.0; verify exact local file and required attribution/notices. |
+| Self-RAG 2023 | [arXiv v1](https://arxiv.org/abs/2310.11511v1) links CC BY 4.0; same exact-file/attribution review. |
+| NetMHCpan 2020 | Local PDF page 1 states CC BY-NC 4.0; confirm intended noncommercial scope and attribution. |
+| MixMHC2pred 2023 | Local PDF page 2 states CC BY-NC 4.0; also review supplementary/third-party material in the 31-page file. |
+
+See [existing exact-file rights review](rag_distribution_review.md),
+[arXiv grant](https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html),
+[CC BY conditions](https://creativecommons.org/licenses/by/4.0/), and
+[CC BY-NC conditions](https://creativecommons.org/licenses/by-nc/4.0/).
+Distinguish current local usage, private image upload (remote copies of PDFs and
+indexed text), and public service output (Workspace reading and evidence quotations).
+Private registry access does not establish rights for either remote storage or
+downstream content delivery. Finish recipient/use review and required attribution,
+license links/notices, and modification notices before approving publication.
+
+If rights remain unresolved, keep this bundle local. Seek rights-holder permission
+or approve a new, clearly licensed corpus and versioned index, with grading
+requirements reviewed before changing the five-paper corpus. Do not silently
+remove papers, suppress the validator, or upload the current image anyway.
+
+Embedding identity remains `unverified-legacy-model`: dimensions and self-query
+tests prove structural preservation, not compatibility with current query embeddings.
+Seek historical ingestion/model records; if unavailable, approve a new reproducible
+corpus/index with explicit model and paid-embedding budget. Do not overwrite old
+indexes or assume a live query proves which model produced historical vectors.
+An explicitly approved exploratory deployment could acknowledge this uncertainty,
+but must not claim reproducibility or semantic retrieval validation.
+
+## Preflight checklist and authorized sequence
+
+1. Approve project/billing, region, budget/cap, model selection, secret operator,
+   and exact deployment/publisher/runtime/invoker identities; check organization
+   policies and quotas. `gcloud` is not installed in the current local environment.
+2. Resolve exact-file distribution conditions for all five PDFs and indexed text;
+   prepare approved notices. Approve remote copies and intended service output.
+3. Establish embedding provenance or explicitly decide whether exploratory use of
+   unverified vectors is acceptable; approve any replacement/re-embedding separately.
+4. Approve public grading admission, anonymous shared-ID privacy limitations,
+   retention defaults, provider allowance and expiry; no mandatory grading auth added.
+5. Separately authorize the resource/IAM/billing provisioning commands, secret
+   operator workflow, and budget setup. This document authorizes none of them.
+6. Rebuild/reverify the locally changed application image and any approved notices;
+   recheck approved image identity/artifact digest and source exclusions;
+   separately authorize one upload to the approved private repository. Capture the
+   registry digest, then deploy that immutable digest with approved configuration.
+7. Audit private IAM policy, effective scaling/CPU/secrets/probe configuration and
+   secret version metadata, then make authorized authenticated health/readiness
+   requests. Those requests incur cloud usage but no provider calls.
+8. Measure native startup/import/validation/MCP readiness time, warm health latency,
+   instance CPU/memory, `/tmp` size, post-idle reuse, and shutdown logs. Record image
+   digest, revision, allocation, region and platform; compare against emulated local
+   96.15-second startup, sampled ~821 MiB peak and 2.39/5.09-second shutdowns only
+   as prior evidence, not native predictions. Capture p50/p95 and OOM/restart events.
+9. Obtain separate approval for one bounded live Evidence+Web turn: at most two
+   generation requests, one query embedding and one Tavily search; retries zero,
+   top_k/max_results 1. Implement a counted fail-closed harness before calls; the
+   zero retries alone do not enforce this stricter counted live-test plan. Inspect
+   private sanitized tool names/status/IDs without logging source text or tokens.
+10. Approve grading access only after native checks and provider validation; record
+    revocation/rollback procedure. Do not make an unvalidated revision public.
+
+Preflight planning is complete with explicit open decisions. Native performance,
+live-provider compatibility, actual project policies/quotas, public-admission approval,
+rights approval, and embedding provenance are not verified. Step 4.8 needs explicit
+authorization and resolution/acceptance of the relevant gates before any mutation.
+
+## Historical Step 4.7 verification (before Step 4.7c)
+
+- Inspected Dockerfile, entrypoint/runtime, Settings, runner, API/lifecycle/limits,
+  MCP connection configuration, ignore rules and existing deployment/security/rights
+  reviews. Searched repository/parent tree for assignment/README/AGENTS files.
+- Re-ran `validate_bundle` with unchanged recovered `SPEC`, pinned metadata digest
+  and `uv.lock`; passed for 615 chunks, five IDs, 1536 dimensions, 11 payload files.
+- Compared SHA-256, sizes and mtimes before/after for original `data/index`, recovered
+  candidate and final bundle: unchanged. Bundle remains Git-ignored.
+- Parsed seven prepared Bash blocks with `bash -n`: passed; none executed.
+- `.venv/bin/ruff check .`: passed; `.venv/bin/ruff format --check .`: 90 files
+  already formatted; `git diff --check`: passed.
+- No application/test code changed; full tests were not re-run for documentation
+  changes. Prior Step 4.6 results remain 389 ordinary passed / 38 deselected and 28
+  Docker TCP tests passed; these are prior results, not new deployment evidence.
+- No image build/push/run, cloud commands, credentials access, or paid provider
+  calls. Only the two new planning documents were added; no staging/commit/push.
+
+## Step 4.7c verification supersedes the historical results above
+
+Current ordinary suite: 400 passed / 38 deselected; deterministic real-STDIO/budget
+selection: 18 passed / 1 deselected; Ruff checks and Git whitespace passed. Bundle
+validation and all 29 protected fingerprints remain unchanged. See the
+[approval checklist](deployment_approval_checklist.md) for exact commands and the
+reported accidental live-test connection attempt, which failed at DNS and was not
+retried. That test is now explicitly opt-in; no successful provider validation or
+cloud operation occurred. This step changed application code and therefore needs
+new local Docker verification before any approved image publication.
+
+
+## Step 4.7d release verification and timeout revision
+
+The [local release report](release_readiness_47d.md) supersedes the pending Docker
+verification above: new current-code image, 32 TCP tests and non-root network-disabled
+production startup passed. Proposed Cloud Run timeout increases to 300s to allow
+measured emulated cold startup plus HTTP budget; native performance remains unmeasured.
+No cloud settings were changed. Rights/notices, model uncertainty acceptance and
+named publication/deployment/public-access approvals remain gates.
+
+## Step 4.7h artifact update
+
+The current locally verified release is Corpus v2 with `text-embedding-3-small`,
+1536 dimensions, 586 chunks and `rag_long_context_2024` replacing `rag_2020`.
+[Release verification](release_readiness_47h.md) supersedes historical v1/model-unknown
+release assumptions. GET `/attribution` plus image notices now deliver attribution;
+noncommercial and third-party scope conditions remain. Public anonymous access,
+provider spending/expiry, named cloud identities/resources/secrets, registry push
+and deployment still require explicit approval. No cloud commands were run.
+
+## Step 4.8.0 startup and billing clarification
+
+Retain the conservative 240-second startup-probe window (24 × 10s), with each
+probe timeout 3s. It accommodates the measured ~121s emulated startup with about
+119s headroom, not a guarantee of native success. The current health-check guide
+allows broader windows while the container contract still says listen within four
+minutes; this proposal stays within the stricter bound. Startup probes are platform
+checks and do not require exposing anonymous application invocation.
+
+The proposed 300s HTTP platform timeout is separate and includes startup. A ~121s
+cold start plus the 120s Agent deadline fits (~241s before overhead), but cold start
+plus the full 180s application deadline is ~301s and can exceed the platform budget.
+Preserve application deadlines; first check authenticated readiness, then run paid
+verification only with separate approval. Measure native cold starts before changing
+this proposal. Platform queueing and startup are outside the app timer; do not
+automatically retry `/chat`. Health/ready/attribution requests consume cloud compute
+after deployment even though they do not call paid external providers.
+
+The $5/month project-wide alerts-only budget is the confirmed plan. Optional Cloud
+Run-only spend caps need separate approval/eligibility verification; first-party
+accounts only, single project and eligible billing service, delayed enforcement,
+in-flight/fixed cost exclusions, monthly reset. They cannot cap all GCP plus provider
+spending. No cap, budget, API, IAM or service was created in this step.

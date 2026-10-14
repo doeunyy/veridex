@@ -4,18 +4,27 @@ import asyncio
 import math
 from collections import Counter
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 from datetime import UTC, datetime
+from time import monotonic
 
 from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.errors import GraphRecursionError
 
+from veridex.agent.budgets import (
+    AgentBudgetExceeded,
+    SessionCapacityError,
+    TurnBudget,
+    compact_memory,
+)
 from veridex.agent.graph import build_agent_graph
 from veridex.agent.prompts import MCP_AGENT_SYSTEM_PROMPT
-from veridex.config import settings
+from veridex.config import Settings, settings
 from veridex.mcp.client import MCPClientError, ToolRegistry, connect_servers
+from veridex.observability import observed
 
 _REQUIRED_TOOLS = {"search_evidence", "search_web", "list_documents", "read_document"}
 
@@ -40,6 +49,7 @@ class MCPAgentService:
         checkpointer=None,
         recursion_limit: int = 12,
         turn_timeout: float = 120,
+        limits: Settings | None = None,
     ):
         if not registry.is_active:
             raise MCPClientError("MCP registry is not active.")
@@ -54,6 +64,11 @@ class MCPAgentService:
         self.turn_timeout = turn_timeout
         self._closed = False
         self._session_locks: dict[str, asyncio.Lock] = {}
+        self.limits = limits or settings
+        self._session_users = {}
+        self._session_used = {}
+        self._session_admin = asyncio.Lock()
+        self._budget = ContextVar(f"veridex-budget-{id(self)}")
         self._origins = {
             name: {
                 "server": entry.server,
@@ -70,22 +85,73 @@ class MCPAgentService:
             system_prompt=MCP_AGENT_SYSTEM_PROMPT
             + f"\nCurrent date: {datetime.now(UTC).date().isoformat()}.",
             handle_tool_errors=_tool_error,
+            before_model=lambda messages: self._budget.get().before_model(messages),
+            before_tools=lambda messages: self._budget.get().before_tools(messages),
         )
 
+    @property
+    def is_usable(self) -> bool:
+        """Local lifecycle readiness; does not issue provider or MCP requests."""
+        return not self._closed and self.registry.is_active
+
     def _ensure_open(self):
-        if self._closed or not self.registry.is_active:
+        if not self.is_usable:
             raise MCPClientError("MCP agent service is closed.")
 
-    def _lock(self, session_id: str) -> asyncio.Lock:
+    @asynccontextmanager
+    async def _session(self, session_id: str):
         if not isinstance(session_id, str) or not session_id.strip():
             raise ValueError("Session ID cannot be empty.")
-        return self._session_locks.setdefault(session_id, asyncio.Lock())
+        self._ensure_open()
+        async with self._session_admin:
+            self._ensure_open()
+            now = monotonic()
+            expired = [
+                key
+                for key, used in self._session_used.items()
+                if not self._session_users[key]
+                and now - used >= self.limits.agent_session_ttl_seconds
+            ]
+            for key in expired:
+                await self.checkpointer.adelete_thread(key)
+                del self._session_locks[key], self._session_users[key], self._session_used[key]
+            if session_id not in self._session_locks:
+                if len(self._session_locks) >= self.limits.agent_max_sessions:
+                    raise SessionCapacityError("Session capacity exhausted.")
+                self._session_locks[session_id] = asyncio.Lock()
+                self._session_users[session_id] = 0
+                self._session_used[session_id] = now
+            lock = self._session_locks[session_id]
+            # Waiting turns also reserve the session; TTL cleanup cannot remove it.
+            self._session_users[session_id] += 1
+        try:
+            async with lock:
+                token = self._budget.set(
+                    TurnBudget(
+                        self.limits.agent_max_tool_calls,
+                        self.limits.agent_max_model_calls,
+                        self.limits.agent_max_context_characters,
+                    )
+                )
+                try:
+                    yield
+                finally:
+                    try:
+                        if type(self.checkpointer) is InMemorySaver:
+                            await compact_memory(
+                                self.checkpointer, session_id, self.limits.agent_history_turns
+                            )
+                    finally:
+                        self._budget.reset(token)
+        finally:
+            self._session_users[session_id] -= 1
+            self._session_used[session_id] = monotonic()
 
     async def achat(self, query: str, session_id: str) -> str:
         return (await self.achat_with_trace(query, session_id))["response"]
 
     async def aget_history(self, session_id: str):
-        async with self._lock(session_id):
+        async with self._session(session_id):
             self._ensure_open()
             state = await self.graph.aget_state({"configurable": {"thread_id": session_id}})
             return deepcopy(state.values.get("messages", []))
@@ -116,10 +182,11 @@ class MCPAgentService:
             return (await self.graph.aget_state(config)).values
         return result
 
+    @observed("agent")
     async def achat_with_trace(self, query: str, session_id: str) -> dict:
         if not isinstance(query, str) or not query.strip():
             raise ValueError("Query cannot be empty.")
-        async with self._lock(session_id):
+        async with self._session(session_id):
             self._ensure_open()
             config = {
                 "configurable": {"thread_id": session_id},
@@ -142,13 +209,21 @@ class MCPAgentService:
                 snapshot = await self.graph.aget_state(config)
                 await self._finish_interrupted_round(config, snapshot.values)
                 raise
-            except (GraphRecursionError, TimeoutError) as exc:
+            except (GraphRecursionError, TimeoutError, AgentBudgetExceeded) as exc:
                 error = (
-                    "recursion_limit" if isinstance(exc, GraphRecursionError) else "turn_timeout"
+                    str(exc)
+                    if isinstance(exc, AgentBudgetExceeded)
+                    else "recursion_limit"
+                    if isinstance(exc, GraphRecursionError)
+                    else "turn_timeout"
                 )
                 snapshot = await self.graph.aget_state(config)
                 result = await self._finish_interrupted_round(config, snapshot.values)
                 response = "I could not complete this request within the agent limits. No final answer is verified."
+            except Exception:
+                snapshot = await self.graph.aget_state(config)
+                await self._finish_interrupted_round(config, snapshot.values)
+                raise
             messages = [
                 message for message in result.get("messages", []) if message.id not in previous_ids
             ]
@@ -209,6 +284,12 @@ class MCPAgentService:
         for lock in list(self._session_locks.values()):
             async with lock:
                 pass
+        if type(self.checkpointer) is InMemorySaver:
+            for key in self._session_locks:
+                await self.checkpointer.adelete_thread(key)
+        self._session_locks.clear()
+        self._session_users.clear()
+        self._session_used.clear()
 
 
 @asynccontextmanager
@@ -220,14 +301,20 @@ async def open_mcp_agent_service(
     recursion_limit=12,
     turn_timeout=120,
     request_timeout=45,
+    limits: Settings | None = None,
 ):
     """Own the registry and AgentService together; enter/exit in the same async task."""
+    limits = limits or settings
     if model is None:
         if not settings.openai_api_key:
             raise ValueError("OPENAI_API_KEY is not configured.")
         # Leave temperature at the model's default (reasoning models may reject temperature=0).
         model = ChatOpenAI(
-            model=settings.openai_model, api_key=settings.openai_api_key, timeout=45, max_retries=1
+            model=settings.openai_model,
+            api_key=settings.openai_api_key,
+            timeout=limits.provider_timeout_seconds,
+            max_retries=limits.provider_max_retries,
+            max_completion_tokens=limits.agent_max_completion_tokens,
         )
     async with connect_servers(connections, timeout=request_timeout) as registry:
         service = MCPAgentService(
@@ -236,6 +323,7 @@ async def open_mcp_agent_service(
             checkpointer=checkpointer,
             recursion_limit=recursion_limit,
             turn_timeout=turn_timeout,
+            limits=limits,
         )
         try:
             yield service

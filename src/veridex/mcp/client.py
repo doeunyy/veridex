@@ -19,6 +19,7 @@ from langchain_mcp_adapters.tools import convert_mcp_tool_to_langchain_tool
 from mcp.types import InitializeResult, Tool
 
 from veridex.config import Settings, settings
+from veridex.observability import execution
 
 DEFAULT_TIMEOUT_SECONDS = 45
 _SERVER_ID = re.compile(r"[A-Za-z0-9_-]{1,64}\Z")
@@ -51,6 +52,8 @@ def default_connections(
             "OPENAI_EMBEDDING_MODEL": config.openai_embedding_model,
             "CHROMA_PERSIST_DIR": path(config.chroma_persist_dir),
             "CHROMA_COLLECTION": config.chroma_collection,
+            "PROVIDER_TIMEOUT_SECONDS": str(config.provider_timeout_seconds),
+            "PROVIDER_MAX_RETRIES": str(config.provider_max_retries),
         },
         "web_search": {"TAVILY_API_KEY": config.tavily_api_key or ""},
         "workspace": {
@@ -131,6 +134,16 @@ class ToolRegistry:
         return [entry.langchain_tool for entry in self.entries.values()]
 
     async def _intercept(self, request, handler):
+        server = request.server_name
+        with execution("mcp_tool", server=server, tool=request.name) as fail_protocol:
+            result = await self._intercept_observed(request, handler)
+            if getattr(result, "isError", False) is True or (
+                isinstance(result, ToolMessage) and result.status == "error"
+            ):
+                fail_protocol()
+            return result
+
+    async def _intercept_observed(self, request, handler):
         server = request.server_name
         async with self._locks[server]:
             if not self._active:

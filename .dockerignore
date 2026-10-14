@@ -12,8 +12,23 @@ __pycache__
 *.pyc
 *.log
 
-data/papers
-data/index
+data
+.artifacts
+.docker-artifacts
+PROCESS_LOG.md
+.agents
+.codex
+.aws
+.ssh
+.envrc
+*.pem
+*.key
+mcp_config.json
+outputs
+scratch
+logs
+reports/generated
+.DS_Store
 
 tests
 docs
