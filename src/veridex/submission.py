@@ -65,13 +65,16 @@ def source_path(name: str) -> bool:
     if any(part in {"node_modules", "__pycache__", "venv", "build", "dist"} for part in p.parts):
         return False
     if any(part.startswith(".") for part in p.parts) and name not in ROOT_FILES:
-        return name == ".github/pull_request_template.md"
+        return name == ".github/pull_request_template.md" or (
+            p.parts[:2] == (".github", "workflows") and len(p.parts) == 3 and p.suffix == ".yml"
+        )
     if p.name in {"credentials.json", "service-account.json", "development_notes.md"}:
         return False
     return (
         name in ROOT_FILES
         or (p.parts[0] in {"src", "scripts", "tests"} and p.suffix == ".py")
         or (p.parts[0] == "docs" and len(p.parts) == 2 and p.suffix in {".md", ".mmd", ".json"})
+        or (p.parts[:2] == ("docs", "v1") and len(p.parts) == 3 and p.suffix in {".md", ".json"})
         or (
             p.parts[:4] == ("src", "veridex", "deployment", "notices")
             and p.name in {"CC-BY-4.0.txt", "CC-BY-NC-4.0.txt"}

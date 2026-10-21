@@ -59,10 +59,16 @@ def validate_source_names(names):
             not any(part.startswith(".") for part in path.parts)
             or name in ROOT_FILES
             or (name == ".github/pull_request_template.md")
+            or (path.parts[:2] == (".github", "workflows") and path.suffix == ".yml")
         )
         allowed = (
             name in ROOT_FILES
             or name == ".github/pull_request_template.md"
+            or (
+                path.parts[:2] == (".github", "workflows")
+                and len(path.parts) == 3
+                and path.suffix == ".yml"
+            )
             or (path.parts[0] in {"src", "scripts", "tests"} and path.suffix == ".py")
             or (
                 path.parts[:4] == ("src", "veridex", "deployment", "notices")
@@ -73,6 +79,11 @@ def validate_source_names(names):
                 and len(path.parts) == 2
                 and path.suffix in {".md", ".mmd", ".json"}
                 and path.name != "development_notes.md"
+            )
+            or (
+                path.parts[:2] == ("docs", "v1")
+                and len(path.parts) == 3
+                and path.suffix in {".md", ".json"}
             )
             or name in {"data/samples/manifest.json", "data/samples/eval_questions.json"}
         )
