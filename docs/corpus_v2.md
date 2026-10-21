@@ -216,7 +216,7 @@ authorized by these instructions.
 ## Step 4.7h release handoff
 
 Linux/amd64 reopening, native validation, non-root MCP/HTTP verification and notice
-delivery are now recorded in [release_readiness_47h.md](release_readiness_47h.md).
+delivery are now recorded in [release_readiness_47h.md](v1/release_readiness_47h.md).
 The source bundle digest and all protected artifacts remain unchanged. Attribution
 is generated into the image rather than added to the immutable bundle inventory.
 Historical statements about pending Docker work describe the 4.7g handoff. Subsequent

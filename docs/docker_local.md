@@ -3,7 +3,7 @@
 The current Dockerfile/runtime consume only `.artifacts/versions/veridex-rag-v2-local`
 and its pinned bundle digest. The historical Step 4.5 commands below refer to v1;
 they require the corresponding historical checkout and are not current build commands.
-See [release_readiness_47h.md](release_readiness_47h.md) for initial v2 verification.
+See [release_readiness_47h.md](v1/release_readiness_47h.md) for initial v2 verification.
 
 The original source ZIP (source-only) and Git checkout contain no PDFs, Chroma index or
 deployment bundle. An optional private coursework ZIP supplies the same approved
@@ -215,4 +215,4 @@ separate image verification records the successful Linux test without rewriting 
 The Step 4.5 measurements above are historical. The candidate at Step 4.7d was
 `veridex:phase04-47d`; its identity, 32 offline TCP passes, native index checks,
 non-root production startup and shutdown/resource results are recorded in
-[release_readiness_47d.md](release_readiness_47d.md). It remains local/internal.
+[release_readiness_47d.md](v1/release_readiness_47d.md). It remains local/internal.

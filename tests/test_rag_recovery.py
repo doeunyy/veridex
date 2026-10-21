@@ -24,6 +24,30 @@ SPEC = ArtifactSpec(
 )
 
 
+FTS5_FAILURE = [("malformed inverted index for FTS5 table main.embedding_fulltext_search",)]
+
+
+def corrupt_fts5_index(path: Path) -> None:
+    """Reproduce the reviewed FTS5-only failure regardless of the SQLite build.
+
+    Some SQLite builds corrupt the trigram index when Chroma stores the NUL-bearing
+    chunk; others index it cleanly. Damage one FTS5 leaf block only when needed.
+    """
+    with closing(sqlite3.connect(path)) as db:
+        if db.execute("PRAGMA integrity_check").fetchall() == [("ok",)]:
+            leaf_id, block = db.execute(
+                "SELECT id, block FROM embedding_fulltext_search_data ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            damaged = bytearray(block)
+            damaged[len(damaged) // 4] ^= 0xFF
+            db.execute(
+                "UPDATE embedding_fulltext_search_data SET block=? WHERE id=?",
+                (bytes(damaged), leaf_id),
+            )
+            db.commit()
+        assert db.execute("PRAGMA integrity_check").fetchall() == FTS5_FAILURE
+
+
 @pytest.fixture(scope="module")
 def seed(tmp_path_factory):
     root = tmp_path_factory.mktemp("recovery-source")
@@ -59,6 +83,7 @@ c.add(ids=[target,'chunk-b'],documents=[raw,'BERTd d(z) q(x) other'],
         check=False,
     )
     assert result.returncode == 0, result.stderr.decode()
+    corrupt_fts5_index(root / "data/index/chroma.sqlite3")
     (root / "uv.lock").write_text("synthetic lock")
     raw_file.unlink()
     return root

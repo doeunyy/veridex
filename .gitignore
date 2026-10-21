@@ -186,3 +186,8 @@ docs/_build/
 
 # Private coursework ZIP artifacts; supplied only through the rag named context
 /submission_artifacts/
+
+# ------------------------------------------------------------
+# v1 read-only GCP snapshots (keep outside the repo)
+# ------------------------------------------------------------
+*-gcp-snapshot-*/

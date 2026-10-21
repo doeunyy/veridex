@@ -1,6 +1,6 @@
 [project]
 name = "veridex"
-version = "0.1.0"
+version = "2.0.0.dev0"
 description = "Agentic evidence retrieval and verification system"
 requires-python = ">=3.13,<3.14"
 dependencies = [
@@ -28,7 +28,7 @@ target-version = "py313"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-m 'not integration'"
 markers = [
     "integration: tests requiring local corpus, vector index, or external API",
