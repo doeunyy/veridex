@@ -28,7 +28,7 @@ target-version = "py313"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-m 'not integration'"
 markers = [
     "integration: tests requiring local corpus, vector index, or external API",
