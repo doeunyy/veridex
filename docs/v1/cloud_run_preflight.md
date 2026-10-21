@@ -5,7 +5,7 @@
 > OpenAI's USD 5 enforced limit and Tavily Free/PAYG-disabled settings were manually
 > confirmed; the GCP USD 5 budget is alerts-only. Corpus v2 notices and noncommercial
 > restrictions remain applicable. Earlier dated planning/approval sections below
-> are historical records. See [README](../README.md#cloud-run-deployment) for current
+> are historical records. See [README](../../README.md#cloud-run-deployment) for current
 > provenance and [commands](cloud_run_commands.md) for prepared rollback/revocation.
 
 # Phase 04 Step 4.7: Cloud Run deployment preflight
@@ -257,7 +257,7 @@ text/SQLite/FTS. It remains local/internal, not remotely authorized.
 | NetMHCpan 2020 | Local PDF page 1 states CC BY-NC 4.0; confirm intended noncommercial scope and attribution. |
 | MixMHC2pred 2023 | Local PDF page 2 states CC BY-NC 4.0; also review supplementary/third-party material in the 31-page file. |
 
-See [existing exact-file rights review](rag_distribution_review.md),
+See [existing exact-file rights review](../rag_distribution_review.md),
 [arXiv grant](https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html),
 [CC BY conditions](https://creativecommons.org/licenses/by/4.0/), and
 [CC BY-NC conditions](https://creativecommons.org/licenses/by-nc/4.0/).

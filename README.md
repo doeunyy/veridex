@@ -467,7 +467,7 @@ an existing service, stage a separately reviewed `--no-traffic` revision rather 
 running this initial-create example blindly. Registry storage, Cloud Run and provider
 usage can incur costs; retain the service until grading is complete.
 
-[`docs/cloud_run_commands.md`](docs/cloud_run_commands.md) preserves historical
+[`docs/v1/cloud_run_commands.md`](docs/v1/cloud_run_commands.md) preserves historical
 approval-gated commands and image identities. Its old identity-pinned publication
 function is not a reusable requirement for your new build. The recorded deployed
 image/source above remains unchanged by any new documentation or build.
@@ -485,7 +485,7 @@ Revocation is not scheduled. After grading, the operator must separately authori
 and execute the service-level binding removal, verify IAM enforcement and inherited
 access, and confirm anonymous requests are denied. Organization IAM inspection was
 not permitted, so inherited organization-level access is not exhaustively verified.
-Commands are in [`docs/cloud_run_commands.md`](docs/cloud_run_commands.md).
+Commands are in [`docs/v1/cloud_run_commands.md`](docs/v1/cloud_run_commands.md).
 
 ## Costs
 
@@ -597,7 +597,7 @@ corpus in Git or automatically attach it to a public release.
 
 - [`docs/api_security.md`](docs/api_security.md): request limits and safe error handling.
 - [`docs/docker_local.md`](docs/docker_local.md): container build and offline verification.
-- [`docs/cloud_run_preflight.md`](docs/cloud_run_preflight.md) and
-  [`docs/cloud_run_commands.md`](docs/cloud_run_commands.md): Cloud Run preparation and
+- [`docs/v1/cloud_run_preflight.md`](docs/v1/cloud_run_preflight.md) and
+  [`docs/v1/cloud_run_commands.md`](docs/v1/cloud_run_commands.md): Cloud Run preparation and
   reviewed commands.
 - [`PROCESS_LOG.md`](PROCESS_LOG.md): the AI-assisted development process.
