@@ -17,6 +17,7 @@ from veridex.agents.graph import build_graph
 from veridex.agents.state import WORKERS
 from veridex.agents.tools import shared_tools, tools_by_agent
 from veridex.config import Settings, settings
+from veridex.llm import usage
 from veridex.llm.providers import Provider, model_id
 from veridex.mcp.client import MCPClientError, ToolRegistry, connect_servers, default_connections
 from veridex.observability import observed
@@ -100,11 +101,14 @@ class MultiAgentService:
                 done = data
         return done
 
-    async def astream_turn(self, query: str, session_id: str) -> AsyncIterator[tuple[str, dict]]:
+    async def astream_turn(
+        self, query: str, session_id: str, *, include_contexts: bool = False
+    ) -> AsyncIterator[tuple[str, dict]]:
         """Run one turn, yielding (event, data) as orchestration progresses.
 
         Events: route, trace, token, citations, done. The turn is saved to the
         conversation store before `done`, so a follow-up on any instance sees it.
+        `include_contexts` adds the full text of every retrieved source (for RAGAS).
         """
         if not isinstance(query, str) or not query.strip():
             raise ValueError("Query cannot be empty.")
@@ -115,7 +119,9 @@ class MultiAgentService:
             started = monotonic()
             first_token = None
             routing, trace, agents = [], [], []
+            sources: dict[str, dict] = {}
             final: dict = {}
+            calls = usage.start_turn()
             async with asyncio.timeout(self.turn_timeout):
                 history = await self.store.load(session_id, self.config.agent_history_turns)
                 async for mode, chunk in self.graph.astream(
@@ -139,16 +145,31 @@ class MultiAgentService:
                         for event in (update or {}).get("trace") or []:
                             trace.append(event)
                             yield "trace", event
-                        agents += [_agent_summary(r) for r in (update or {}).get("results") or []]
+                        for result in (update or {}).get("results") or []:
+                            agents.append(_agent_summary(result))
+                            sources |= result["sources"]
                         if node == "finalize":
                             final = update
                 output = {
                     "response": final["answer"],
-                    "citations": final.get("citations", []),
+                    "citations": [_public(c) for c in final.get("citations", [])],
                     "routing": routing,
                     "trace": trace,
                     "agents": agents,
+                    "usage": calls,
+                    "cost_usd": usage.cost_usd(calls),
+                    "timing": {
+                        "retrieval_ms": sum(
+                            c.get("duration_ms", 0) for a in agents for c in a["tool_calls"]
+                        ),
+                        "llm_ms": sum(c["duration_ms"] for c in calls),
+                    },
                 }
+                if include_contexts:
+                    output["contexts"] = [
+                        {"id": key, "kind": s["kind"], "text": s["text"]}
+                        for key, s in sources.items()
+                    ]
                 await self.store.append(session_id, make_turn(query, output))
             self._last_used[session_id] = monotonic()
         yield "citations", {"citations": output["citations"]}
@@ -188,6 +209,11 @@ def _token(message, metadata: dict) -> str:
     if isinstance(content, list):
         content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
     return content if isinstance(content, str) else ""
+
+
+def _public(citation: dict) -> dict:
+    """Citations sent to clients carry a snippet, not the full retrieved text."""
+    return {k: v for k, v in citation.items() if k != "text"}
 
 
 def _agent_summary(result: dict) -> dict:

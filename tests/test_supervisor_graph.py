@@ -319,3 +319,19 @@ async def test_service_runs_turns_and_limits_sessions():
         await service.achat("hi", "s2")
     with pytest.raises(ValueError):
         await service.achat(" ", "s1")
+
+
+def test_sql_rows_and_extracts_become_uncited_evidence():
+    from langchain_core.messages import ToolMessage
+
+    from veridex.agents.citations import collect_sources
+
+    sources = {}
+    sql = {"sql": "SELECT 1", "columns": ["n"], "rows": [[42]], "truncated": False}
+    collect_sources(ToolMessage(content=json.dumps(sql), tool_call_id="1"), sources)
+    page = {"results": [{"url": "https://x.org/a", "raw_content": "full page text"}]}
+    collect_sources(ToolMessage(content=json.dumps(page), tool_call_id="2"), sources)
+    kinds = {s["kind"]: s for s in sources.values()}
+    assert '"rows": [[42]]' in kinds["sql"]["text"]
+    assert kinds["web"]["text"] == "full page text"
+    assert cited("The answer is 42 [sql:0].", sources) == []
