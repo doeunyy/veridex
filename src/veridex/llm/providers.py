@@ -25,7 +25,9 @@ def is_configured(provider: Provider, config: Settings | None = None) -> bool:
     return bool(key and key.strip())
 
 
-def create_chat_model(provider: Provider, config: Settings | None = None) -> BaseChatModel:
+def create_chat_model(
+    provider: Provider, config: Settings | None = None, *, thinking_budget: int | None = None
+) -> BaseChatModel:
     """Build a bounded chat model; no request is sent here.
 
     Temperature is left at the provider default: the GPT-6 reasoning models reject
@@ -47,10 +49,12 @@ def create_chat_model(provider: Provider, config: Settings | None = None) -> Bas
         )
     from langchain_google_genai import ChatGoogleGenerativeAI
 
+    extra = {} if thinking_budget is None else {"thinking_budget": thinking_budget}
     return ChatGoogleGenerativeAI(
         model=config.gemini_model,
         google_api_key=config.google_api_key,
         timeout=config.provider_timeout_seconds,
         max_retries=config.provider_max_retries,
         max_output_tokens=config.agent_max_completion_tokens,
+        **extra,
     )

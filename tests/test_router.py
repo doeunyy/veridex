@@ -108,3 +108,45 @@ async def test_no_fallback_without_second_provider():
             factory=lambda provider: Broken(messages=iter([])),
             config=only_gemini,
         )
+
+
+@pytest.mark.parametrize(
+    ("agent", "signals", "budget"),
+    [
+        ("supervisor", Signals(), 0),
+        ("data", Signals(), 512),
+        ("research", Signals(), 1024),
+        ("summary", Signals(documents=1), None),
+        ("research", Signals(comparison=True), None),  # OpenAI: no Gemini budget
+    ],
+)
+def test_thinking_budget_per_rule(agent, signals, budget):
+    assert route(agent, signals, BOTH).thinking_budget == budget
+
+
+def test_gemini_model_receives_the_budget():
+    model = create_chat_model("gemini", BOTH, thinking_budget=0)
+    assert model.thinking_budget == 0
+    assert create_chat_model("gemini", BOTH).thinking_budget is None
+
+
+@pytest.mark.asyncio
+async def test_fallback_recomputes_the_budget_for_the_other_provider():
+    models = {
+        "openai": Broken(messages=iter([])),
+        "gemini": GenericFakeChatModel(messages=iter([AIMessage(content="ok")])),
+    }
+    only_openai_rule = route("research", Signals(comparison=True), BOTH)
+    _, used = await invoke_with_fallback(
+        only_openai_rule, [HumanMessage(content="hi")], factory=models.__getitem__, config=BOTH
+    )
+    assert used.provider == "gemini" and used.thinking_budget is None
+    supervisor = route("supervisor", Signals(), BOTH)
+    models = {
+        "gemini": Broken(messages=iter([])),
+        "openai": GenericFakeChatModel(messages=iter([AIMessage(content="ok")])),
+    }
+    _, used = await invoke_with_fallback(
+        supervisor, [HumanMessage(content="hi")], factory=models.__getitem__, config=BOTH
+    )
+    assert used.provider == "openai" and used.thinking_budget is None
