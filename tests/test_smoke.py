@@ -24,4 +24,5 @@ def test_core_dependencies():
 def test_settings():
     config = Settings(_env_file=None)
     assert config.app_env == "development"
-    assert config.chroma_collection == "veridex_documents"
+    assert config.chroma_collection == "veridex_corpus_v3"
+    assert (config.openai_model, config.gemini_model) == ("gpt-6.1-sol", "gemini-3.8-flash")

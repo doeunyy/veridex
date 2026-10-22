@@ -10,6 +10,7 @@ dependencies = [
     "langchain>=1.4.4",
     "langchain-chroma>=1.1.0",
     "langchain-community>=0.4.2",
+    "langchain-google-genai>=4.4.2",
     "langchain-mcp-adapters>=0.3.1,<0.4",
     "langchain-openai>=1.7.0",
     "langchain-text-splitters>=1.1.3",
@@ -25,6 +26,10 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
+[tool.ruff.lint.isort]
+# Classify veridex imports the same way whether or not a module exists (CI has no cache).
+known-first-party = ["veridex"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -46,8 +46,8 @@ REQUIRED = frozenset(
         "scripts/serve_api.py",
         "scripts/container_entrypoint.py",
         "src/veridex/mcp/servers/evidence.py",
-        "src/veridex/mcp/servers/web_search.py",
         "src/veridex/mcp/servers/workspace.py",
+        "src/veridex/mcp/servers/catalog.py",
         "docs/rag_attribution_v2.json",
         "src/veridex/deployment/notices/CC-BY-4.0.txt",
         "src/veridex/deployment/notices/CC-BY-NC-4.0.txt",
@@ -102,7 +102,7 @@ def check_source(files: dict[str, bytes]) -> None:
             raise ArtifactError("Binary content is not approved source.")
         for match in CREDENTIAL.finditer(text):
             if (name, match.group()) != (
-                "tests/test_mcp_web_search.py",
+                "tests/test_mcp_multi_server.py",
                 "tvly-" + "test-secret-never-log",
             ):
                 raise ArtifactError("Credential-like material in submission source.")

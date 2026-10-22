@@ -12,10 +12,14 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str | None = None
-    openai_model: str = "gpt-5"
+    openai_model: str = "gpt-6.1-sol"
     openai_embedding_model: str = "text-embedding-3-small"
 
+    google_api_key: str | None = None
+    gemini_model: str = "gemini-3.8-flash"
+
     tavily_api_key: str | None = None
+    tavily_mcp_url: str = "https://mcp.tavily.com/mcp/"
 
     app_env: str = "development"
     log_level: str = "INFO"
@@ -34,15 +38,22 @@ class Settings(BaseSettings):
     agent_max_sessions: int = Field(default=128, ge=1, le=1024)
     agent_session_ttl_seconds: float = Field(default=1800, ge=60, le=86400, allow_inf_nan=False)
     agent_history_turns: int = Field(default=6, ge=2, le=20)
-    provider_timeout_seconds: float = Field(default=30, gt=0, le=45, allow_inf_nan=False)
+    provider_timeout_seconds: float = Field(default=90, gt=0, le=180, allow_inf_nan=False)
     provider_max_retries: int = Field(default=0, ge=0, le=1)
+
+    supervisor_max_hops: int = Field(default=3, ge=1, le=6)
+    worker_max_tool_rounds: int = Field(default=4, ge=1, le=8)
+    worker_max_tool_calls: int = Field(default=6, ge=1, le=20)
+    worker_max_tool_result_characters: int = Field(default=8000, ge=1000, le=100_000)
+    router_long_context_characters: int = Field(default=24_000, ge=1000, le=1_000_000)
 
     corpus_attribution_path: Path | None = None
 
-    documents_dir: Path = Path("./data/papers")
-    workspace_manifest_path: Path = Path("./data/samples/manifest.json")
-    chroma_persist_dir: Path = Path("./data/index")
-    chroma_collection: str = "veridex_documents"
+    corpus_manifest_path: Path = Path("./data/corpus_v3/papers.json")
+    documents_dir: Path = Path("./.artifacts/corpus_v3/papers")
+    chroma_persist_dir: Path = Path("./.artifacts/corpus_v3/chroma")
+    chroma_collection: str = "veridex_corpus_v3"
+    catalog_path: Path = Path("./.artifacts/corpus_v3/catalog.db")
 
     mcp_servers_config: Path = Path("./mcp_config.json")
 
