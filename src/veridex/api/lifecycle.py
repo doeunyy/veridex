@@ -11,13 +11,12 @@ from contextlib import asynccontextmanager, nullcontext
 
 import anyio
 
-from veridex.agent.mcp_service import open_mcp_agent_service
+from veridex.agents.service import REQUIRED_SERVERS, open_multi_agent_service
 from veridex.mcp.client import MCPClientError
 
 SHUTDOWN_TIMEOUT = 8.0
 DRAIN_TIMEOUT = 0.5
 REPAIR_TIMEOUT = 1.5
-PRODUCTION_SERVERS = {"evidence", "web_search", "workspace"}
 
 
 async def drain_requests(application):
@@ -36,7 +35,7 @@ async def drain_requests(application):
 
 
 def agent_lifespan(*, injected_service=None, service_factory=None):
-    factory = service_factory or open_mcp_agent_service
+    factory = service_factory or open_multi_agent_service
 
     @asynccontextmanager
     async def lifespan(application):
@@ -52,10 +51,8 @@ def agent_lifespan(*, injected_service=None, service_factory=None):
                 )
                 async with context as service:
                     if injected_service is None:
-                        if set(service.registry.servers) != PRODUCTION_SERVERS:
-                            raise MCPClientError(
-                                "The API requires all three production MCP servers."
-                            )
+                        if not REQUIRED_SERVERS <= set(service.registry.servers):
+                            raise MCPClientError("The API requires every production MCP server.")
                         if not service.is_usable:
                             raise MCPClientError("Agent service is unavailable.")
                     application.state.agent_service = service

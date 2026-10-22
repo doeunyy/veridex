@@ -8,8 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from veridex.agent.budgets import SessionCapacityError
-from veridex.agent.mcp_service import MCPAgentService
+from veridex.agents.service import MultiAgentService, SessionCapacityError
 from veridex.api.attribution import CorpusAttribution, load_attribution
 from veridex.api.lifecycle import agent_lifespan
 from veridex.api.limits import Admission, ChatLimitsMiddleware
@@ -19,7 +18,7 @@ from veridex.observability import execution, turn_context
 
 
 class AsyncAgentService(Protocol):
-    """The async chat surface already provided by MCPAgentService."""
+    """The async chat surface provided by MultiAgentService."""
 
     async def achat(self, query: str, session_id: str) -> str: ...
 
@@ -34,7 +33,7 @@ def get_agent_service(request: Request) -> AsyncAgentService:
     if (
         request.app.state.shutting_down
         or service is None
-        or (isinstance(service, MCPAgentService) and not service.is_usable)
+        or (isinstance(service, MultiAgentService) and not service.is_usable)
     ):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -46,19 +45,19 @@ def get_agent_service(request: Request) -> AsyncAgentService:
 def create_app(
     *,
     agent_service: AsyncAgentService | None = None,
-    service_factory: Callable[[], AbstractAsyncContextManager[MCPAgentService]] | None = None,
+    service_factory: Callable[[], AbstractAsyncContextManager[MultiAgentService]] | None = None,
     config: Settings | None = None,
 ) -> FastAPI:
     """Create an isolated app, optionally with an already initialized service.
 
     An injected service bypasses MCP creation. A factory permits real STDIO tests
-    with deterministic models; production uses open_mcp_agent_service directly.
+    with deterministic models; production uses open_multi_agent_service directly.
     """
     if agent_service is not None and service_factory is not None:
         raise ValueError("Choose an injected service or a service factory.")
     application = FastAPI(
         title="Veridex",
-        version="0.1.0",
+        version="2.0.0.dev0",
         lifespan=agent_lifespan(injected_service=agent_service, service_factory=service_factory),
     )
     application.state.agent_service = agent_service

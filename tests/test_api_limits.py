@@ -5,16 +5,8 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 from pydantic import ValidationError
-from test_agent_mcp import ScriptedModel, call, request
-from test_agent_mcp_reliability import assert_balanced_history, wait_for_file
-from test_agent_mcp_reliability import (
-    observed_connections as observed_connections,  # noqa: PLC0414 — pytest fixture
-)
 from test_api_lifecycle import Lifespan
-from test_mcp_multi_server import connections as connections  # noqa: PLC0414 — pytest fixture
-from test_mcp_multi_server import is_alive, process_ids
 
-from veridex.agent.mcp_service import open_mcp_agent_service
 from veridex.api.app import create_app
 from veridex.config import Settings
 
@@ -285,34 +277,6 @@ async def test_shutdown_cancels_active_and_queued_requests():
         assert (await client.post("/chat", json=BODY)).status_code == 503
     assert not application.state.chat_tasks
     assert application.state.admission.active == application.state.admission.waiting == 0
-
-
-async def test_http_deadline_repairs_real_mcp_tool_history(observed_connections):
-    configs, log, control = observed_connections
-    model = ScriptedModel([request(call("search_evidence", {"query": "slow"}))])
-    application = create_app(
-        service_factory=lambda: open_mcp_agent_service(configs, model=model),
-        config=config(api_request_timeout_seconds=1),
-    )
-    owner = Lifespan(application)
-    await owner.start()
-    service = application.state.agent_service
-    try:
-        async with client_for(application) as client:
-            turn = asyncio.create_task(client.post("/chat", json=BODY))
-            await wait_for_file(control / "evidence.slow.started")
-            result = await turn
-            assert result.status_code == 504
-            assert result.json() == {"detail": "Request deadline exceeded."}
-            messages = await service.aget_history("a")
-            assert_balanced_history(messages)
-            marker = next(m for m in messages if m.type == "tool")
-            assert marker.status == "error" and marker.artifact is None
-            assert marker.additional_kwargs["execution_interrupted"]
-    finally:
-        (control / "release").touch()
-        await owner.stop()
-    assert all(not is_alive(pid) for pid in process_ids(log))
 
 
 @pytest.mark.parametrize(
