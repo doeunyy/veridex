@@ -10,7 +10,7 @@ from langchain_core.tools import BaseTool
 
 from veridex.agents.citations import collect_sources
 from veridex.agents.prompts import WORKER_PROMPTS
-from veridex.agents.state import WorkerName
+from veridex.agents.state import WorkerName, announce
 from veridex.agents.tools import canonical_name
 from veridex.config import Settings
 from veridex.llm.providers import Provider
@@ -140,6 +140,7 @@ def _record(routing: list[dict], used: RoutingDecision) -> None:
     entry = used.as_dict()
     if not routing or routing[-1] != entry:
         routing.append(entry)
+        announce("route", entry)
 
 
 def _text(message: AIMessage) -> str:
