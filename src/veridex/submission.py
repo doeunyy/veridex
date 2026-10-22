@@ -79,7 +79,12 @@ def source_path(name: str) -> bool:
             p.parts[:4] == ("src", "veridex", "deployment", "notices")
             and p.name in {"CC-BY-4.0.txt", "CC-BY-NC-4.0.txt"}
         )
-        or name in {"data/samples/manifest.json", "data/samples/eval_questions.json"}
+        or name
+        in {
+            "data/samples/manifest.json",
+            "data/samples/eval_questions.json",
+            "data/corpus_v3/papers.json",
+        }
     )
 
 

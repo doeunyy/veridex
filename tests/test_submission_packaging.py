@@ -85,7 +85,12 @@ def validate_source_names(names):
                 and len(path.parts) == 3
                 and path.suffix in {".md", ".json"}
             )
-            or name in {"data/samples/manifest.json", "data/samples/eval_questions.json"}
+            or name
+            in {
+                "data/samples/manifest.json",
+                "data/samples/eval_questions.json",
+                "data/corpus_v3/papers.json",
+            }
         )
         assert allowed, f"Unapproved source-package path: {name}"
 
@@ -96,7 +101,15 @@ def source_names():
         # Extracted source packages have no Git inventory. Inspect their source
         # directories, excluding only bytecode generated while running these tests.
         names = {name for name in ROOT_FILES if (ROOT / name).is_file()}
-        for directory in ["src", "scripts", "tests", "docs", "data/samples", ".github"]:
+        for directory in [
+            "src",
+            "scripts",
+            "tests",
+            "docs",
+            "data/samples",
+            "data/corpus_v3",
+            ".github",
+        ]:
             names.update(
                 p.relative_to(ROOT).as_posix()
                 for p in (ROOT / directory).rglob("*")
