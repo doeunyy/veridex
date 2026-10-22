@@ -57,7 +57,7 @@ modifications and third-party scope. It is independent of Agent readiness, invok
 no provider, and has no write endpoint. Successful `/chat` replies link to it via
 `Link: </attribution>; rel="describedby"` while still returning exactly
 `{"response":"..."}`. Missing local notice configuration yields safe 503 for that
-endpoint, with existing API behavior preserved. [Review copy](../rag_attribution_v2.json)
+endpoint, with existing API behavior preserved. [Review copy](rag_attribution_v2.json)
 reflects the actual served payload; historical v1 rights records remain intact.
 
 ReAct/Self-RAG/replacement use CC BY 4.0; NetMHCpan/MixMHC2pred use CC BY-NC 4.0.

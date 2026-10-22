@@ -119,7 +119,7 @@ pass. RAG is the only file with no established downstream license grant; the oth
 files have license evidence but incomplete release conditions. The user's deployment
 approval cannot manufacture missing copyright permission. Private storage or
 educational use is not automatically a grant. See [attribution inventory](rag_attribution.json)
-and [rights review](../rag_distribution_review.md).
+and [rights review](rag_distribution_review.md).
 
 Prioritize rights evidence/permission for the existing RAG work, preserving the
 snapshot. If unavailable, approve just one replacement candidate:

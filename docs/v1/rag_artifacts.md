@@ -147,6 +147,6 @@ corpus stays read-only; only an instance-local Chroma copy is writable. Repeat
 SQLite/FTS5 integrity, native filtering, vector preservation and retrieval checks
 in Linux/amd64. `--platform` alone does not prove native compatibility.
 
-See [the distribution review](../rag_distribution_review.md). Remote image publication
+See [the distribution review](rag_distribution_review.md). Remote image publication
 is blocked pending authorization, even to a private registry. No Linux container,
 Docker image, registry upload, or cloud deployment has been performed here.

@@ -3,7 +3,7 @@
 The current Dockerfile/runtime consume only `.artifacts/versions/veridex-rag-v2-local`
 and its pinned bundle digest. The historical Step 4.5 commands below refer to v1;
 they require the corresponding historical checkout and are not current build commands.
-See [release_readiness_47h.md](v1/release_readiness_47h.md) for initial v2 verification.
+See [release_readiness_47h.md](release_readiness_47h.md) for initial v2 verification.
 
 The original source ZIP (source-only) and Git checkout contain no PDFs, Chroma index or
 deployment bundle. An optional private coursework ZIP supplies the same approved
@@ -11,7 +11,7 @@ bundle under `submission_artifacts/veridex-rag-v2-local/`; its notice stays outs
 the immutable bundle. Never attach the corpus automatically to a public release.
 Use the already deployed public `/chat` API without local artifacts, or obtain the
 exact approved external bundle through a separately authorized handoff before building.
-The public URL and contract are in [README.md](../README.md#api-contract).
+The public URL and contract are in [README.md](README_v1.md#api-contract).
 Required bundle files are `bundle.json`, `manifest.json`, five approved `papers/*.pdf`
 files and the complete `chroma/` directory. The pinned **SHA-256 of `bundle.json`** is
 `7f1398ecc8958faa6b0bb24cb9061ab0ec33d8e87f9782d8d9e72938891ae1fb`.
@@ -46,7 +46,7 @@ in its OCI label. Step 4.12g verified 35 offline Docker tests against this image
 Match the recorded source, Dockerfile, lock and external bundle when reproducing
 that release; later documentation commits are not its build provenance.
 Byte-identical image reconstruction has not been demonstrated. See the
-[deployment provenance](../README.md#cloud-run-deployment) for its immutable digest.
+[deployment provenance](README_v1.md#cloud-run-deployment) for its immutable digest.
 
 The verified stage explicitly selects the replacement PDF, validates 586 vectors,
 five v2 IDs, metadata, SQLite/FTS5, four text filters and all native self-queries.
@@ -69,7 +69,7 @@ review copy; the build generates notices from the digest-validated bundle itself
 
 For a current production-equivalent container run with runtime-only credentials,
 localhost port binding and health/readiness/chat checks, follow the
-[README workflow](../README.md#production-equivalent-corpus-v2-container).
+[README workflow](README_v1.md#production-equivalent-corpus-v2-container).
 It requires the approved bundle: an external handoff for a source-only ZIP, or
 the included `submission_artifacts/veridex-rag-v2-local/` in the private coursework
 ZIP. Use that directory as the `rag` named context. The default Docker context
@@ -215,4 +215,4 @@ separate image verification records the successful Linux test without rewriting 
 The Step 4.5 measurements above are historical. The candidate at Step 4.7d was
 `veridex:phase04-47d`; its identity, 32 offline TCP passes, native index checks,
 non-root production startup and shutdown/resource results are recorded in
-[release_readiness_47d.md](v1/release_readiness_47d.md). It remains local/internal.
+[release_readiness_47d.md](release_readiness_47d.md). It remains local/internal.

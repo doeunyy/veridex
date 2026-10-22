@@ -67,5 +67,5 @@ Before public admission, approve rights/notices, anonymous privacy limitations,
 provider allowance, expiry and revocation. Stage private, then use the separate
 public grant. Revocation cannot recall disclosed text. Cancellation-resistant work,
 synchronous PDF/Chroma threads and idle CPU throttling still need native validation.
-See [approval checklist](v1/deployment_approval_checklist.md) and
-[prepared commands](v1/cloud_run_commands.md). No cloud action is authorized here.
+See [approval checklist](deployment_approval_checklist.md) and
+[prepared commands](cloud_run_commands.md). No cloud action is authorized here.

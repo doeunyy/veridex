@@ -3,7 +3,7 @@
 Reviewed 2026-10-12. This supersedes the earlier conditional distribution review.
 Only rights/attribution decision documents were updated. No remote PDFs were fetched,
 no artifact was changed, and no publication or deployment is authorized. Exact local
-SHA-256 values and full author lists remain in [rag_attribution.json](v1/rag_attribution.json).
+SHA-256 values and full author lists remain in [rag_attribution.json](rag_attribution.json).
 The JSON is an inventory, not a rights grant or a complete packaged NOTICE file.
 
 ## Decision and exact-file disposition

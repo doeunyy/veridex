@@ -21,13 +21,13 @@
 
 ## Reusable instructions versus historical publication gates
 
-For a new build in your own project, follow the [README deployment procedure](../../README.md#deploying-a-new-image-to-your-own-project)
+For a new build in your own project, follow the [README deployment procedure](README_v1.md#deploying-a-new-image-to-your-own-project)
 using the image you have just validated and its resulting registry digest. It lists
 required infrastructure and permissions and keeps public invocation separate.
 The identity-pinned `publish_approved_v2_image` function below is a historical
 Step 4.7h/4.8 publication guard. Its exact local image ID must remain recorded,
 but it must not be used as a required identity for a newly built image.
-The local v2 container run procedure is in [README](../../README.md#production-equivalent-corpus-v2-container).
+The local v2 container run procedure is in [README](README_v1.md#production-equivalent-corpus-v2-container).
 
 # Reviewed Cloud Run commands — historical approval-gated reference
 

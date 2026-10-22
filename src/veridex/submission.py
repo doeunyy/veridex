@@ -70,8 +70,13 @@ def source_path(name: str) -> bool:
             and p.suffix in {".html", ".css", ".js"}
         )
         or (p.parts[0] == "docs" and len(p.parts) == 2 and p.suffix in {".md", ".mmd", ".json"})
-        or (p.parts[:2] == ("docs", "v1") and len(p.parts) == 3 and p.suffix in {".md", ".json"})
+        or (
+            p.parts[:2] == ("docs", "v1")
+            and len(p.parts) == 3
+            and p.suffix in {".md", ".mmd", ".json"}
+        )
         or (p.parts[0] == "deploy" and len(p.parts) == 2 and p.suffix == ".sh")
+        or (p.parts[0] == "eval" and len(p.parts) <= 3 and p.suffix in {".json", ".jsonl", ".md"})
         or name
         in {
             "data/samples/manifest.json",

@@ -5,7 +5,7 @@
 > OpenAI's USD 5 enforced limit and Tavily Free/PAYG-disabled settings were manually
 > confirmed; the GCP USD 5 budget is alerts-only. Corpus v2 notices and noncommercial
 > restrictions remain applicable. Earlier dated planning/approval sections below
-> are historical records. See [README](../../README.md#cloud-run-deployment) for current
+> are historical records. See [README](README_v1.md#cloud-run-deployment) for current
 > provenance and [commands](cloud_run_commands.md) for prepared rollback/revocation.
 
 # Step 4.7c — public grading approval gate
@@ -42,7 +42,7 @@ an authenticated protocol in a future deployment, not a hidden grading constrain
 
 ## Implemented local protections
 
-See [api_security.md](../api_security.md) for exact defaults and safe status mapping.
+See [api_security.md](api_security.md) for exact defaults and safe status mapping.
 In addition to body/field/admission/deadline/recursion/shutdown controls:
 
 - Eight tool calls/six model calls per turn; over-budget rounds are rejected before

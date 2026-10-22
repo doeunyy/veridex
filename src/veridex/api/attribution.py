@@ -54,3 +54,29 @@ def load_attribution(manifest_path: Path | None) -> CorpusAttribution | None:
             for p in manifest.papers
         ],
     )
+
+
+def render_notice(manifest_path: Path) -> str:
+    """CORPUS_LICENSE_NOTICE.md: attribution for every paper shipped in the image."""
+    notice = load_attribution(manifest_path)
+    lines = [
+        "# Corpus v3 attribution and license notice",
+        "",
+        notice.description,
+        "",
+        notice.notice,
+        (
+            "Generated from `data/corpus_v3/papers.json` by "
+            "`uv run python scripts/corpus_v3.py notice`."
+        ),
+        "",
+        "| Paper | Authors | Year | License | Source |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for paper in notice.papers:
+        authors = ", ".join(paper.authors[:6]) + (" et al." if len(paper.authors) > 6 else "")
+        lines.append(
+            f"| {paper.title} | {authors} | {paper.year} | "
+            f"[{paper.license}]({paper.license_url}) | <{paper.source_url}> |"
+        )
+    return "\n".join(lines) + "\n"
