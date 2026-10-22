@@ -27,6 +27,10 @@ dependencies = [
 line-length = 100
 target-version = "py313"
 
+[tool.ruff.lint.isort]
+# Classify veridex imports the same way whether or not a module exists (CI has no cache).
+known-first-party = ["veridex"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
