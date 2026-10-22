@@ -97,21 +97,25 @@ citations). Tool failures become error tool messages that cannot be cited.
 
 `veridex.llm.router` picks a provider per call from the agent and observable signals of
 the question (`comparison`, `multi_part`, `needs_web`, `documents`, `escalate`). Every
-decision records `provider`, `model`, `dimension`, `rule`, `reason` and the `signals`,
+decision records `provider`, `model`, `dimension`, `rule`, `reason`, `thinking_budget` and the `signals`,
 is streamed to the UI as a routing chip, and is stored in the trace.
 
-| Agent | Rule | Signal | Provider | Dimension | Why |
-| --- | --- | --- | --- | --- | --- |
-| supervisor | `classify` | always | Gemini | cost | short classification |
-| research | `single_lookup` | no comparison, multi-part or recency words | Gemini | cost | one grounded lookup |
-| research | `multi_step_synthesis` | comparison, multi-part or recency | OpenAI | capability | multi-source reasoning |
-| summary | `long_context` | one paper | Gemini | capability | long page text, large context window |
-| summary | `cross_document` | two or more papers | OpenAI | capability | cross-paper synthesis |
-| data | `structured_lookup` | first attempt | Gemini | cost | small schema, simple SQL |
-| data | `sql_repair` | a SQL call failed | OpenAI | capability | error-driven repair |
-| synthesis | `multi_agent_merge` | two or more workers answered | OpenAI | capability | merge with citations intact |
+| Agent | Rule | Signal | Provider | Dimension | Gemini thinking budget | Why |
+| --- | --- | --- | --- | --- | --- | --- |
+| supervisor | `classify` | always | Gemini | cost | 0 | short classification |
+| research | `single_lookup` | no comparison, multi-part or recency words | Gemini | cost | 1024 | one grounded lookup |
+| research | `multi_step_synthesis` | comparison, multi-part or recency | OpenAI | capability | – | multi-source reasoning |
+| summary | `long_context` | one paper | Gemini | capability | default | long page text, large context window |
+| summary | `cross_document` | two or more papers | OpenAI | capability | – | cross-paper synthesis |
+| data | `structured_lookup` | first attempt | Gemini | cost | 512 | small schema, simple SQL |
+| data | `sql_repair` | a SQL call failed | OpenAI | capability | – | error-driven repair |
+| synthesis | `multi_agent_merge` | two or more workers answered | OpenAI | capability | – | merge with citations intact |
 
-Routing is hybrid: cheap calls go to Gemini, reasoning-heavy calls to OpenAI.
+Routing is hybrid: cheap calls go to Gemini, reasoning-heavy calls to OpenAI. Gemini 3
+reasons by default; the per-rule `thinking_budget` (recorded in every decision and shown
+in the UI) keeps classification and lookups fast and cheap. Measured effect: time to
+first token halved and cost fell by a third with unchanged RAGAS scores
+([evaluation.md](evaluation.md#change-gemini-reasoning-budgets)).
 **Fallback:** if a provider call fails, the same call is retried once on the other
 provider and the decision is marked `fallback_from`; fallbacks are shown separately
 from routing decisions. Temperature is left at provider defaults (GPT-6 rejects other
