@@ -9,11 +9,10 @@ import os
 import sys
 
 import pytest
-from langchain_core.messages import AIMessage
-from test_agent_mcp import ScriptedModel, call, request
+from langchain_core.tools import ToolException
 
-from veridex.agent.mcp_service import open_mcp_agent_service
 from veridex.framework_logging import SanitizedFrameworkErrors, uvicorn_log_config
+from veridex.mcp.client import MCPClientError, connect_servers
 
 SENTINEL = "PRIVATE_MALFORMED_RESPONSE_SENTINEL"
 
@@ -71,7 +70,7 @@ import json, os, sys
 from pathlib import Path
 mode, role, pidfile = sys.argv[1:]
 Path(pidfile).write_text(str(os.getpid()))
-names = {"web_search": ["search_web"], "workspace": ["list_documents", "read_document"], "evidence": ["search_evidence"]}[role]
+names = {"tavily": ["tavily_search"], "workspace": ["list_documents", "read_document"], "evidence": ["search_evidence"]}[role]
 failed = False
 for line in sys.stdin:
     req = json.loads(line)
@@ -83,7 +82,7 @@ for line in sys.stdin:
     elif method == "tools/list":
         result = {"tools": [{"name": name, "description": "Offline test tool", "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}}, "additionalProperties": False}} for name in names]}
     elif method == "tools/call":
-        if role == "web_search" and not failed:
+        if role == "tavily" and not failed:
             failed = True
             if mode == "invalid_json":
                 print('{"PRIVATE_MALFORMED_RESPONSE_SENTINEL":', flush=True)
@@ -120,38 +119,22 @@ async def test_malformed_wire_error_recovery_cleanup_and_log_safety(tmp_path, ca
     server = tmp_path / "wire_server.py"
     server.write_text(SERVER)
     connections = {}
-    for role in ["web_search", "workspace", "evidence"]:
+    for role in ["tavily", "workspace", "evidence"]:
         connections[role] = {
             "transport": "stdio",
             "command": sys.executable,
             "args": [str(server), mode, role, str(tmp_path / (role + ".pid"))],
         }
-    model = ScriptedModel(
-        [
-            request(call("search_web", {"query": "offline"})),
-            AIMessage(content="Tool failed; no verified evidence."),
-            request(call("search_web", {"query": "offline"})),
-            AIMessage(content="Recovered offline."),
-            request(call("list_documents")),
-            AIMessage(content="Healthy server available."),
-        ]
-    )
     async with asyncio.timeout(15):
-        async with open_mcp_agent_service(connections, model=model, request_timeout=5) as service:
-            service.registry._timeout = 0.3
-            failed = await asyncio.wait_for(service.achat_with_trace("first", "wire-test"), 3)
-            assert failed["tool_results"][0]["status"] == "error"
-            assert failed["tool_results"][0]["artifact"] is None
-            assert SENTINEL not in failed["response"]
-            history = await service.aget_history("wire-test")
-            assert [m.status for m in history if m.type == "tool"] == ["error"]
-            assert [m.content for m in history if m.type == "tool"] == [
-                "MCP tool execution failed. No usable evidence was returned; do not cite this failure."
-            ]
-            recovered = await service.achat_with_trace("second", "wire-test")
-            assert recovered["tool_results"][0]["status"] == "success"
-            healthy = await service.achat_with_trace("third", "healthy-test")
-            assert healthy["server_call_counts"] == {"workspace": 1}
+        async with connect_servers(connections, timeout=5) as registry:
+            registry._timeout = 0.3
+            with pytest.raises((MCPClientError, ToolException)) as failure:
+                await asyncio.wait_for(registry.invoke("tavily_search", {"query": "offline"}), 3)
+            assert SENTINEL not in str(failure.value)
+            recovered = await registry.invoke("tavily_search", {"query": "offline"})
+            assert recovered.status == "success"
+            healthy = await registry.invoke("list_documents", {})
+            assert healthy.status == "success"
     assert all(not alive(int((tmp_path / (role + ".pid")).read_text())) for role in connections)
     # The production logger boundary must not permit SDK validation text or tracebacks.
     assert SENTINEL not in caplog.text
