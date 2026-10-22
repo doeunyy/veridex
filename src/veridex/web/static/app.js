@@ -137,6 +137,7 @@ function renderRoute(turn, decision) {
     `<span class="agent">${escapeHtml(decision.agent)}</span>→` +
     `<span class="provider">${escapeHtml(decision.model)}</span>` +
     `<span class="muted">${escapeHtml(decision.dimension)}:${escapeHtml(decision.rule)}</span>` +
+    (decision.thinking_budget != null ? `<span class="muted">thinking ${decision.thinking_budget}</span>` : "") +
     (decision.fallback_from ? `<span class="fallback">fallback from ${escapeHtml(decision.fallback_from)}</span>` : "");
   $(".routes", turn).appendChild(chip);
 }

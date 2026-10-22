@@ -77,6 +77,7 @@ class RoutingDecision:
     reason: str
     signals: Signals = field(default_factory=Signals)
     fallback_from: Provider | None = None
+    thinking_budget: int | None = None  # Gemini reasoning tokens; None = model default
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -155,6 +156,15 @@ def _rule(agent: Agent, s: Signals) -> tuple[Provider, Dimension, str, str]:
     )
 
 
+# Gemini 3 reasons by default (hundreds of billed output tokens per call). Short
+# classification and lookup calls do not need it, and it dominated time to first token.
+THINKING_BUDGETS = {"classify": 0, "structured_lookup": 512, "single_lookup": 1024}
+
+
+def thinking_budget(provider: Provider, rule: str) -> int | None:
+    return THINKING_BUDGETS.get(rule) if provider == "gemini" else None
+
+
 def route(
     agent: Agent, signals: Signals | None = None, config: Settings | None = None
 ) -> RoutingDecision:
@@ -178,6 +188,7 @@ def route(
         rule=rule,
         reason=reason,
         signals=signals,
+        thinking_budget=thinking_budget(provider, rule),
     )
 
 
@@ -199,13 +210,17 @@ async def invoke_with_fallback(
     Returns (response, decision actually used).
     """
     config = config or settings
-    factory = factory or (lambda provider: create_chat_model(provider, config))
+
+    def model_for(used: RoutingDecision) -> BaseChatModel:
+        if factory is not None:
+            return factory(used.provider)
+        return create_chat_model(used.provider, config, thinking_budget=used.thinking_budget)
 
     async def call(used: RoutingDecision):
         started = monotonic()
         try:
             with execution("model"):
-                response = await prepare(factory(used.provider)).ainvoke(messages)
+                response = await prepare(model_for(used)).ainvoke(messages)
         except BaseException:
             usage.record(used.agent, used.provider, used.model, None, started, ok=False)
             raise
@@ -224,5 +239,6 @@ async def invoke_with_fallback(
             model=model_id(other, config),
             fallback_from=decision.provider,
             reason=f"{decision.provider} failed ({type(primary).__name__}); fell back to {other}.",
+            thinking_budget=thinking_budget(other, decision.rule),
         )
         return await call(fallback)
