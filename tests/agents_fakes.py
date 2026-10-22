@@ -17,6 +17,7 @@ CONFIG = Settings(
     google_api_key="g-test",
     worker_max_tool_rounds=3,
     supervisor_max_hops=3,
+    state_backend="memory",
 )
 
 

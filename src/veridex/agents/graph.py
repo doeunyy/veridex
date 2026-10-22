@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from veridex.agents.citations import cited
 from veridex.agents.prompts import SUPERVISOR_PROMPT, SYNTHESIS_PROMPT
-from veridex.agents.state import WORKERS, Next, SupervisorState, WorkerName
+from veridex.agents.state import WORKERS, Next, SupervisorState, WorkerName, announce
 from veridex.agents.workers import run_worker
 from veridex.config import Settings, settings
 from veridex.llm.providers import Provider
@@ -106,6 +106,7 @@ def build_graph(
                 if not isinstance(choice, SupervisorChoice):
                     choice = SupervisorChoice.model_validate(choice)
                 update["routing"] = [used.as_dict()]
+                announce("route", update["routing"][0])
             except Exception as exc:  # noqa: BLE001 — fall back to deterministic routing
                 choice = heuristic_choice(question, results)
                 choice.reason = f"{choice.reason} (supervisor model failed: {type(exc).__name__})"
@@ -181,6 +182,7 @@ def build_graph(
             )
             answer, mode = _content(response), "synthesis"
             update["routing"] = [used.as_dict()]
+            announce("route", update["routing"][0])
         else:
             answer, mode = _failure_message(failed), "failure"
         sources = {k: v for r in results for k, v in r["sources"].items()}

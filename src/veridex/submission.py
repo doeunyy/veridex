@@ -73,6 +73,11 @@ def source_path(name: str) -> bool:
     return (
         name in ROOT_FILES
         or (p.parts[0] in {"src", "scripts", "tests"} and p.suffix == ".py")
+        or (
+            p.parts[:4] == ("src", "veridex", "web", "static")
+            and len(p.parts) == 5
+            and p.suffix in {".html", ".css", ".js"}
+        )
         or (p.parts[0] == "docs" and len(p.parts) == 2 and p.suffix in {".md", ".mmd", ".json"})
         or (p.parts[:2] == ("docs", "v1") and len(p.parts) == 3 and p.suffix in {".md", ".json"})
         or (

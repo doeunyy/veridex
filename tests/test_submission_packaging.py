@@ -73,6 +73,11 @@ def validate_source_names(names):
             )
             or (path.parts[0] in {"src", "scripts", "tests"} and path.suffix == ".py")
             or (
+                path.parts[:4] == ("src", "veridex", "web", "static")
+                and len(path.parts) == 5
+                and path.suffix in {".html", ".css", ".js"}
+            )
+            or (
                 path.parts[:4] == ("src", "veridex", "deployment", "notices")
                 and path.name in {"CC-BY-4.0.txt", "CC-BY-NC-4.0.txt"}
             )

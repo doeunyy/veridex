@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,6 +47,11 @@ class Settings(BaseSettings):
     worker_max_tool_calls: int = Field(default=6, ge=1, le=20)
     worker_max_tool_result_characters: int = Field(default=8000, ge=1000, le=100_000)
     router_long_context_characters: int = Field(default=24_000, ge=1000, le=1_000_000)
+
+    state_backend: Literal["memory", "sqlite", "firestore"] = "sqlite"
+    state_sqlite_path: Path = Path("./.artifacts/state/conversations.db")
+    firestore_project_id: str | None = None
+    firestore_collection: str = "veridex_conversations"
 
     corpus_attribution_path: Path | None = None
 

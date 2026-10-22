@@ -1,12 +1,16 @@
 """FastAPI contract with an injected agent; importing this module starts no MCP servers."""
 
-from collections.abc import Callable
+import json
+import logging
+from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager
+from pathlib import Path
 from typing import Annotated, Protocol
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from veridex.agents.service import MultiAgentService, SessionCapacityError
 from veridex.api.attribution import CorpusAttribution, load_attribution
@@ -14,13 +18,24 @@ from veridex.api.lifecycle import agent_lifespan
 from veridex.api.limits import Admission, ChatLimitsMiddleware
 from veridex.api.schemas import ChatRequest, ChatResponse, HealthResponse, ReadyResponse
 from veridex.config import Settings, settings
-from veridex.observability import execution, turn_context
+from veridex.observability import exception_class, execution, turn_context
+
+STATIC_DIR = Path(__file__).resolve().parents[1] / "web" / "static"
+_LOG = logging.getLogger("uvicorn.error.veridex")
+_SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
 
 class AsyncAgentService(Protocol):
     """The async chat surface provided by MultiAgentService."""
 
     async def achat(self, query: str, session_id: str) -> str: ...
+
+    def astream_turn(self, query: str, session_id: str) -> AsyncIterator[tuple[str, dict]]: ...
+
+
+def sse(event: str, data: dict) -> str:
+    """One Server-Sent Event; JSON never contains raw newlines, so one data line suffices."""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
 
 
 def get_agent_service(request: Request) -> AsyncAgentService:
@@ -106,6 +121,54 @@ def create_app(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Agent request failed.",
             ) from None
+
+    @application.post(
+        "/api/chat/stream",
+        response_class=StreamingResponse,
+        responses={
+            200: {"content": {"text/event-stream": {}}, "description": "Turn events"},
+            413: {"description": "Request body too large"},
+            429: {"description": "Request capacity exhausted"},
+            503: {"description": "Agent service unavailable"},
+        },
+    )
+    async def chat_stream(
+        body: ChatRequest,
+        service: Annotated[AsyncAgentService, Depends(get_agent_service)],
+    ) -> StreamingResponse:
+        """Stream one turn as SSE: route, trace, token, citations, done (or error)."""
+
+        async def events():
+            with turn_context(), execution("chat"):
+                try:
+                    async for event, data in service.astream_turn(body.query, body.session_id):
+                        yield sse(event, data)
+                except SessionCapacityError:
+                    yield sse("error", {"message": "Session capacity exhausted. Try later."})
+                except TimeoutError:
+                    yield sse("error", {"message": "The request took too long. Please retry."})
+                except Exception as exc:  # noqa: BLE001 — never stream internal details
+                    _LOG.info(
+                        json.dumps(
+                            {"event": "stream_failed", "exception_class": exception_class(exc)}
+                        )
+                    )
+                    yield sse("error", {"message": "Agent request failed."})
+
+        return StreamingResponse(events(), media_type="text/event-stream", headers=_SSE_HEADERS)
+
+    @application.get("/api/info")
+    async def info(
+        service: Annotated[AsyncAgentService, Depends(get_agent_service)],
+    ) -> dict:
+        """Agents, tools, shared MCP tools and models, for the UI side panel."""
+        return service.describe() if hasattr(service, "describe") else {}
+
+    @application.get("/", include_in_schema=False)
+    async def index() -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html")
+
+    application.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @application.get("/attribution", response_model=CorpusAttribution)
     async def corpus_attribution() -> CorpusAttribution:
