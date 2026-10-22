@@ -19,6 +19,10 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --locked
+      - name: requirements.txt matches uv.lock
+        run: |
+          uv export --format requirements-txt --no-hashes --no-dev --no-emit-project --frozen -q -o "$RUNNER_TEMP/requirements.txt"
+          diff <(grep -v '^#' "$RUNNER_TEMP/requirements.txt") <(grep -v '^#' requirements.txt)
       - name: Lint
         run: |
           uv run ruff check .
