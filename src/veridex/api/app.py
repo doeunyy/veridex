@@ -72,7 +72,7 @@ def create_app(
         raise ValueError("Choose an injected service or a service factory.")
     application = FastAPI(
         title="Veridex",
-        version="2.0.0.dev0",
+        version="2.0.0",
         lifespan=agent_lifespan(injected_service=agent_service, service_factory=service_factory),
     )
     application.state.agent_service = agent_service
