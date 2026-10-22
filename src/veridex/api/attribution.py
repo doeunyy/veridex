@@ -1,36 +1,56 @@
-"""Public corpus notices only: no provider traces, document text or internal paths."""
+"""Public corpus notice derived from the Corpus v3 manifest (CC BY 4.0 / CC0 attribution)."""
 
-import json
 from pathlib import Path
-from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+
+from veridex.rag.v3.manifest import load_manifest
+
+NOTICE = (
+    "Veridex indexes and serves text from the papers below under their stated licenses. "
+    "Text was extracted and split into passages for retrieval; no other changes were made. "
+    "Copyright remains with the authors."
+)
 
 
 class PaperAttribution(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
-    id: str
+    doc_id: str
     title: str
-    authors: list[str] = Field(min_length=1)
-    source_url: str
-    version: str
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    license_id: Literal["CC-BY-4.0", "CC-BY-NC-4.0"]
+    authors: list[str]
+    year: int
+    license: str
     license_url: str
-    copyright_notice: str
-    modifications: list[str]
-    third_party_scope: str
+    source_url: str
 
 
 class CorpusAttribution(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
-    corpus_version: str
-    intended_use: str
-    limitations: list[str]
-    documents: list[PaperAttribution] = Field(min_length=5, max_length=5)
+    corpus: str
+    description: str
+    notice: str
+    papers: list[PaperAttribution]
 
 
-def load_attribution(path: Path | None) -> CorpusAttribution | None:
-    if path is None:
+def load_attribution(manifest_path: Path | None) -> CorpusAttribution | None:
+    """None when no corpus manifest is deployed (e.g. a bare API test app)."""
+    if manifest_path is None or not manifest_path.is_file():
         return None
-    return CorpusAttribution.model_validate(json.loads(path.read_bytes()))
+    manifest = load_manifest(manifest_path)
+    return CorpusAttribution(
+        corpus=manifest.corpus,
+        description=manifest.description,
+        notice=NOTICE,
+        papers=[
+            PaperAttribution(
+                doc_id=p.doc_id,
+                title=p.title,
+                authors=list(p.authors),
+                year=p.year,
+                license=p.license,
+                license_url=p.license_url,
+                source_url=p.abs_url,
+            )
+            for p in manifest.papers
+        ],
+    )
