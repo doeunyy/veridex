@@ -39,7 +39,13 @@ def ragas_table(mode: str = "routed") -> str:
     scores = _load(f"ragas_{mode}.json") or {}
     questions = load_questions()
     rows = ["| Category | n | " + " | ".join(METRICS.values()) + " |", "|---|---|" + "---|" * 4]
-    groups = [("rag", "Corpus RAG"), ("summary", "Summary"), ("data", "Data (SQL)"), ("web", "Web")]
+    groups = [
+        ("rag", "Corpus RAG"),
+        ("compare", "Comparison / multi-step"),
+        ("summary", "Summary"),
+        ("data", "Data (SQL)"),
+        ("web", "Web"),
+    ]
     all_ids = []
     for category, label in groups:
         ids = [q["id"] for q in questions if q["category"] == category and q["id"] in scores]

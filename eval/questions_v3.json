@@ -1,7 +1,7 @@
 {
   "version": "questions_v3",
   "created": "2026-10-22",
-  "note": "References for rag/summary/data questions were written from Corpus v3 text and the paper catalog. Web questions have no fixed reference because current information changes; they are scored with reference-free metrics only.",
+  "note": "References for rag/summary/data questions were written from Corpus v3 text and the paper catalog. Web questions have no fixed reference because current information changes; they are scored with reference-free metrics only. Compare questions (added 2026-10-22) combine two papers or two agents and are expected to route to OpenAI.",
   "questions": [
     {
       "id": "rag-01",
@@ -259,6 +259,55 @@
       "question": "What is the Model Context Protocol and who maintains it?",
       "reference": null,
       "reference_documents": []
+    },
+    {
+      "id": "cmp-01",
+      "category": "compare",
+      "question": "Compare how RAPTOR and GraphRAG support questions that need information from across a whole corpus.",
+      "reference": "Both build hierarchical summaries so retrieval can use higher-level information. RAPTOR recursively clusters text chunks by semantic similarity and summarizes each cluster into a tree that is queried by tree traversal or a collapsed tree. GraphRAG uses an LLM to extract a knowledge graph of entities and relationships, partitions it into a hierarchy of communities and generates community summaries bottom-up, which are used to answer global, query-focused summarization questions over the entire corpus.",
+      "reference_documents": [
+        "raptor_2024",
+        "graphrag_2024"
+      ]
+    },
+    {
+      "id": "cmp-02",
+      "category": "compare",
+      "question": "How do Reflexion and LATS differ in the way they use feedback to improve a language agent?",
+      "reference": "Reflexion turns environment feedback into a verbal self-reflection that is stored in memory and added as context for the next trial, so the agent improves across repeated attempts without weight updates. LATS integrates Monte Carlo Tree Search with language agents: it expands ReAct into a search over possible reasoning and acting steps and uses LM-powered value functions and self-reflections to guide exploration, using external feedback within the search.",
+      "reference_documents": [
+        "reflexion_2023",
+        "lats_2023"
+      ]
+    },
+    {
+      "id": "cmp-03",
+      "category": "compare",
+      "question": "Compare the SWE-agent and Agentless approaches to resolving GitHub issues.",
+      "reference": "SWE-agent is an autonomous LM agent whose performance comes from an agent-computer interface (ACI): commands and feedback designed for LM agents to view, search and edit files instead of a raw Linux shell. Agentless argues that complex autonomous agents are not necessary and uses a simple three-phase process of localization, repair and patch validation without letting the LLM decide future actions or use complex tools; on SWE-bench Lite it reached 32.00% at about $0.70 per issue.",
+      "reference_documents": [
+        "swe_agent_2024",
+        "agentless_2024"
+      ]
+    },
+    {
+      "id": "cmp-04",
+      "category": "compare",
+      "question": "What are the differences between RAGAS and ARES for evaluating RAG systems?",
+      "reference": "RAGAS is a reference-free framework that prompts an LLM with fixed prompts to score faithfulness, answer relevance and context relevance. ARES trains tailored LM judges for context relevance, answer faithfulness and answer relevance using a synthetic dataset of question-answer pairs generated from in-domain passages, and needs only a small human preference validation set (about 150 annotated datapoints) and a few in-domain examples; ARES reports higher evaluation accuracy than RAGAS on context relevance and answer relevance.",
+      "reference_documents": [
+        "ragas_2023",
+        "ares_2023"
+      ]
+    },
+    {
+      "id": "cmp-05",
+      "category": "compare",
+      "question": "How many evaluation papers are in the corpus, and what does SelfCheckGPT do?",
+      "reference": "The corpus has 12 papers in the evaluation topic. SelfCheckGPT detects hallucinations in black-box LLM outputs without external resources by sampling multiple responses from the same model and checking their consistency with the original response; facts the model knows stay consistent across samples while hallucinated facts diverge.",
+      "reference_documents": [
+        "selfcheckgpt_2023"
+      ]
     }
   ]
 }
