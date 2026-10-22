@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Veridex</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">V</span>
+        <div>
+          <h1>Veridex</h1>
+          <p>Multi-agent research assistant for LLM agents, RAG and evaluation papers</p>
+        </div>
+      </div>
+      <div class="actions">
+        <span id="session-label" class="muted"></span>
+        <button id="new-chat" type="button">New chat</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="chat" aria-label="Conversation">
+        <div id="messages" class="messages" aria-live="polite">
+          <div id="empty" class="empty">
+            <h2>Ask about the 42-paper corpus or anything current</h2>
+            <p>Each answer shows which agent handled it, which LLM provider was routed to and why, the orchestration trace, and the sources it cites.</p>
+            <div class="suggestions">
+              <button type="button" class="suggestion">What is ReAct and how does it differ from chain-of-thought?</button>
+              <button type="button" class="suggestion">How many papers per topic are in the corpus?</button>
+              <button type="button" class="suggestion">Summarize the RAGAS paper.</button>
+              <button type="button" class="suggestion">What are the latest LLM-as-a-judge benchmarks?</button>
+            </div>
+          </div>
+        </div>
+        <form id="composer" class="composer">
+          <textarea id="query" rows="2" maxlength="10000" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)" required></textarea>
+          <button id="send" type="submit">Send</button>
+        </form>
+      </section>
+
+      <aside class="side" aria-label="System">
+        <h2>Agents and tools</h2>
+        <div id="agents" class="muted">Loading…</div>
+        <h2>Routing rules</h2>
+        <table class="rules">
+          <thead><tr><th>Agent</th><th>Rule</th><th>Provider</th></tr></thead>
+          <tbody>
+            <tr><td>supervisor</td><td>classify</td><td class="p-gemini">Gemini · cost</td></tr>
+            <tr><td>research</td><td>single_lookup</td><td class="p-gemini">Gemini · cost</td></tr>
+            <tr><td>research</td><td>multi_step_synthesis</td><td class="p-openai">OpenAI · capability</td></tr>
+            <tr><td>summary</td><td>long_context</td><td class="p-gemini">Gemini · capability</td></tr>
+            <tr><td>summary</td><td>cross_document</td><td class="p-openai">OpenAI · capability</td></tr>
+            <tr><td>data</td><td>structured_lookup</td><td class="p-gemini">Gemini · cost</td></tr>
+            <tr><td>data</td><td>sql_repair</td><td class="p-openai">OpenAI · capability</td></tr>
+            <tr><td>synthesis</td><td>multi_agent_merge</td><td class="p-openai">OpenAI · capability</td></tr>
+          </tbody>
+        </table>
+        <p class="muted small">A provider error falls back to the other provider and is marked “fallback”.</p>
+      </aside>
+    </main>
+
+    <template id="turn-template">
+      <article class="turn">
+        <div class="bubble user"></div>
+        <div class="bubble assistant">
+          <div class="status"><span class="spinner"></span><span class="status-text">Routing…</span></div>
+          <div class="answer"></div>
+          <div class="routes"></div>
+          <div class="meta muted small"></div>
+          <details class="sources-box" hidden>
+            <summary>Sources</summary>
+            <ol class="sources"></ol>
+          </details>
+          <details class="trace-box">
+            <summary>Orchestration trace</summary>
+            <ol class="trace"></ol>
+          </details>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
