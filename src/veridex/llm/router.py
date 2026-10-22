@@ -22,11 +22,13 @@ Routing table (first matching rule wins):
 import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
+from time import monotonic
 from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 
 from veridex.config import Settings, settings
+from veridex.llm import usage
 from veridex.llm.providers import (
     Provider,
     ProviderUnavailable,
@@ -159,6 +161,9 @@ def route(
     config = config or settings
     signals = signals or Signals()
     provider, dimension, rule, reason = _rule(agent, signals)
+    if config.router_force_provider and config.router_force_provider != provider:
+        reason = f"{reason} Evaluation override: forced to {config.router_force_provider}."
+        provider = config.router_force_provider
     if not is_configured(provider, config):
         other = _other(provider)
         if not is_configured(other, config):
@@ -195,9 +200,20 @@ async def invoke_with_fallback(
     """
     config = config or settings
     factory = factory or (lambda provider: create_chat_model(provider, config))
+
+    async def call(used: RoutingDecision):
+        started = monotonic()
+        try:
+            with execution("model"):
+                response = await prepare(factory(used.provider)).ainvoke(messages)
+        except BaseException:
+            usage.record(used.agent, used.provider, used.model, None, started, ok=False)
+            raise
+        usage.record(used.agent, used.provider, used.model, response, started, ok=True)
+        return response, used
+
     try:
-        with execution("model"):
-            return await prepare(factory(decision.provider)).ainvoke(messages), decision
+        return await call(decision)
     except Exception as primary:
         other = _other(decision.provider)
         if not is_configured(other, config):
@@ -209,5 +225,4 @@ async def invoke_with_fallback(
             fallback_from=decision.provider,
             reason=f"{decision.provider} failed ({type(primary).__name__}); fell back to {other}.",
         )
-        with execution("model"):
-            return await prepare(factory(other)).ainvoke(messages), fallback
+        return await call(fallback)

@@ -73,12 +73,15 @@ async def run_worker(
                 return _result(agent, response, sources, tool_calls, routing, started)
             failed = False
             for call in response.tool_calls:
+                tool_ms = 0
                 if len(tool_calls) >= config.worker_max_tool_calls:
                     message = ToolMessage(
                         content=_BUDGET, name=call["name"], tool_call_id=call["id"], status="error"
                     )
                 else:
+                    tool_started = monotonic()
                     message = await _call_tool(by_name, call)
+                    tool_ms = round((monotonic() - tool_started) * 1000)
                     collect_sources(message, sources)
                     message = _bounded(message, config.worker_max_tool_result_characters)
                 failed |= message.status == "error"
@@ -89,6 +92,7 @@ async def run_worker(
                         "tool": canonical_name(call["name"]),
                         "args": {k: str(v)[:200] for k, v in call["args"].items()},
                         "status": message.status,
+                        "duration_ms": tool_ms,
                     }
                 )
             if agent == "data" and failed and not decision.signals.escalate:

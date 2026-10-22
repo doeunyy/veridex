@@ -99,12 +99,13 @@ def build_graph(
                 choice, used = await invoke_with_fallback(
                     decision,
                     _supervisor_messages(state, question, results),
-                    prepare=lambda model: model.with_structured_output(SupervisorChoice),
+                    prepare=lambda model: model.with_structured_output(
+                        SupervisorChoice, include_raw=True
+                    ),
                     factory=factory,
                     config=config,
                 )
-                if not isinstance(choice, SupervisorChoice):
-                    choice = SupervisorChoice.model_validate(choice)
+                choice = _parsed_choice(choice)
                 update["routing"] = [used.as_dict()]
                 announce("route", update["routing"][0])
             except Exception as exc:  # noqa: BLE001 — fall back to deterministic routing
@@ -209,6 +210,15 @@ def build_graph(
     )
     builder.add_edge("finalize", END)
     return builder.compile(checkpointer=checkpointer)
+
+
+def _parsed_choice(value) -> SupervisorChoice:
+    """Accept include_raw output ({raw, parsed, parsing_error}) or a bare parsed value."""
+    if isinstance(value, dict) and "raw" in value:
+        if value.get("parsed") is None:
+            raise ValueError("Supervisor output could not be parsed.")
+        value = value["parsed"]
+    return value if isinstance(value, SupervisorChoice) else SupervisorChoice.model_validate(value)
 
 
 def _guard(choice: SupervisorChoice, question: str, results: list[dict]) -> SupervisorChoice:

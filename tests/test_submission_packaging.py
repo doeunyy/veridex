@@ -78,6 +78,11 @@ def validate_source_names(names):
             )
             or (path.parts[0] == "deploy" and len(path.parts) == 2 and path.suffix == ".sh")
             or (
+                path.parts[0] == "eval"
+                and len(path.parts) <= 3
+                and path.suffix in {".json", ".jsonl", ".md"}
+            )
+            or (
                 path.parts[0] == "docs"
                 and len(path.parts) == 2
                 and path.suffix in {".md", ".mmd", ".json"}
@@ -86,7 +91,7 @@ def validate_source_names(names):
             or (
                 path.parts[:2] == ("docs", "v1")
                 and len(path.parts) == 3
-                and path.suffix in {".md", ".json"}
+                and path.suffix in {".md", ".mmd", ".json"}
             )
             or name
             in {
@@ -112,6 +117,7 @@ def source_names():
             "data/samples",
             "data/corpus_v3",
             "deploy",
+            "eval",
             ".github",
         ]:
             names.update(
@@ -259,3 +265,23 @@ def test_submission_docs_parse_and_local_links_resolve():
                     continue
                 assert (path.parent / href.split("#", 1)[0]).is_file(), href
         assert text.count("```") % 2 == 0
+
+
+def test_process_log_has_required_sections_and_length():
+    import re
+
+    text = (ROOT / "PROCESS_LOG.md").read_text()
+    headings = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+    assert headings == [
+        "AI tools used",
+        "Development narrative",
+        "Verification narrative",
+        "What I learned",
+    ]
+    words = len(re.sub(r"^#.*$", "", text, flags=re.MULTILINE).split())
+    assert 200 <= words <= 300
+
+
+def test_required_v2_documents_exist():
+    for name in ("docs/architecture.md", "docs/evaluation.md", "README.md", ".env.example"):
+        assert (ROOT / name).is_file(), name

@@ -23,6 +23,7 @@ __pycache__
 
 # Anchored with "/" so gcloud does not also drop nested paths such as src/veridex/data.
 /tests
+/eval
 /docs
 /PROCESS_LOG.md
 /submission_artifacts

@@ -43,6 +43,7 @@ def collect_sources(message: ToolMessage, sources: dict[str, dict]) -> None:
             "page": passage["page"],
             "url": passage["source_url"],
             "snippet": passage["content"][:_SNIPPET],
+            "text": passage["content"],
         }
     document = payload.get("document")
     if isinstance(document, dict):
@@ -56,16 +57,33 @@ def collect_sources(message: ToolMessage, sources: dict[str, dict]) -> None:
                 "page": page["page"],
                 "url": document["source_url"],
                 "snippet": page["text"][:_SNIPPET],
+                "text": page["text"],
             }
     for result in payload.get("results", []):
         if isinstance(result, dict) and result.get("url"):
+            # tavily_search returns `content`; tavily_extract returns `raw_content`.
+            text = result.get("content") or result.get("raw_content") or ""
+            previous = sources.get(result["url"], {})
             sources[result["url"]] = {
                 "kind": "web",
                 "id": result["url"],
-                "title": result.get("title") or result["url"],
+                "title": result.get("title") or previous.get("title") or result["url"],
                 "url": result["url"],
-                "snippet": (result.get("content") or "")[:_SNIPPET],
+                "snippet": text[:_SNIPPET],
+                "text": text if len(text) >= len(previous.get("text", "")) else previous["text"],
             }
+    if "columns" in payload and "rows" in payload:
+        # SQL results are evidence for the Data agent (and RAGAS), not citable chunks.
+        key = f"sql:{len(sources)}"
+        sources[key] = {
+            "kind": "sql",
+            "id": key,
+            "title": payload.get("sql", "SQL result"),
+            "snippet": json.dumps(payload["rows"][:5])[:_SNIPPET],
+            "text": json.dumps(
+                {"sql": payload.get("sql"), "columns": payload["columns"], "rows": payload["rows"]}
+            ),
+        }
 
 
 def cited(answer: str, sources: dict[str, dict]) -> list[dict]:

@@ -126,3 +126,18 @@ async def test_ui_and_info_are_served():
     assert info["shared_tools"]["search_evidence"] == ["research", "summary"]
     assert info["models"] == {"openai": "gpt-6.1-sol", "gemini": "gemini-3.8-flash"}
     assert info["state_backend"] == "memory"
+
+
+async def test_done_reports_usage_cost_timing_and_optional_contexts():
+    svc = service()
+    events = [e async for e in svc.astream_turn("What is ReAct?", "u1", include_contexts=True)]
+    done = events[-1][1]
+    agents = [call["agent"] for call in done["usage"]]
+    assert agents[0] == "supervisor" and "research" in agents
+    assert all(call["ok"] and call["duration_ms"] >= 0 for call in done["usage"])
+    assert done["cost_usd"] == 0  # scripted models report no tokens
+    assert set(done["timing"]) == {"retrieval_ms", "llm_ms"}
+    assert done["contexts"][0]["id"] == "react_2022:p2:c012"
+    assert "text" not in done["citations"][0]
+    plain = [e async for e in svc.astream_turn("Again", "u2")]
+    assert "contexts" not in plain[-1][1]

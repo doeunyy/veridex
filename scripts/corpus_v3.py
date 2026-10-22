@@ -4,6 +4,7 @@ uv run python scripts/corpus_v3.py download
 uv run python scripts/corpus_v3.py plan
 uv run python scripts/corpus_v3.py build --max-usd 0.05
 uv run python scripts/corpus_v3.py catalog
+uv run python scripts/corpus_v3.py notice
 """
 
 import argparse
@@ -26,6 +27,7 @@ def main() -> None:
     build = commands.add_parser("build", help="Embed the planned chunks into a new Chroma index.")
     build.add_argument("--max-usd", type=float, required=True, help="Refuse above this estimate.")
     commands.add_parser("catalog", help="Write the SQLite paper catalog from the plan (no API).")
+    commands.add_parser("notice", help="Write CORPUS_LICENSE_NOTICE.md from the manifest.")
     args = parser.parse_args()
 
     manifest = load_manifest(args.manifest)
@@ -45,6 +47,11 @@ def main() -> None:
         write_plan(chunks, plan, plan_dir)
         summary = {k: plan[k] for k in ("documents", "chunks", "tokens", "requests")}
         print(json.dumps(summary | {"estimated_usd": plan["estimated_usd"]}, indent=2))
+    elif args.command == "notice":
+        from veridex.api.attribution import render_notice
+
+        Path("CORPUS_LICENSE_NOTICE.md").write_text(render_notice(args.manifest))
+        print("CORPUS_LICENSE_NOTICE.md written")
     elif args.command == "catalog":
         from veridex.data.catalog import build_catalog
 

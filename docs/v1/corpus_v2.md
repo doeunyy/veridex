@@ -10,7 +10,7 @@ Its JSON contract remains `{"query": string, "session_id": string}` →
 The repository and original source-only ZIP omit all PDFs, indexes and the approved
 external bundle. The optional private coursework packaging mode supplies exactly
 its 12 files under `submission_artifacts/veridex-rag-v2-local/`, with
-[CORPUS_LICENSE_NOTICE.md](../CORPUS_LICENSE_NOTICE.md) at the archive root.
+[CORPUS_LICENSE_NOTICE.md](CORPUS_LICENSE_NOTICE_v1.md) at the archive root.
 The immutable digest and validation contract are unchanged. This packaging exception
 does not authorize Git inclusion or automatic public-release publication.
 Rebuilding a v2 container requires a separately authorized handoff of
@@ -216,12 +216,12 @@ authorized by these instructions.
 ## Step 4.7h release handoff
 
 Linux/amd64 reopening, native validation, non-root MCP/HTTP verification and notice
-delivery are now recorded in [release_readiness_47h.md](v1/release_readiness_47h.md).
+delivery are now recorded in [release_readiness_47h.md](release_readiness_47h.md).
 The source bundle digest and all protected artifacts remain unchanged. Attribution
 is generated into the image rather than added to the immutable bundle inventory.
 Historical statements about pending Docker work describe the 4.7g handoff. Subsequent
 approved publication, Cloud Run staging and public/live verification are summarized in
-[README.md](../README.md#cloud-run-deployment). Those approvals do not authorize
+[README.md](README_v1.md#cloud-run-deployment). Those approvals do not authorize
 redistributing this external bundle or publishing a new image. The Step 4.12c MCP SDK logging safeguard was subsequently Docker-validated and
 deployed in `veridex-staging-mcp-log-35bbef6`, now serving 100% of normal traffic.
 Its image source remains commit `35bbef6`; later documentation updates do not

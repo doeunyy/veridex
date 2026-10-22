@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     provider_timeout_seconds: float = Field(default=90, gt=0, le=180, allow_inf_nan=False)
     provider_max_retries: int = Field(default=0, ge=0, le=1)
 
+    # Evaluation only: run every agent on one provider for the provider comparison.
+    router_force_provider: Literal["openai", "gemini"] | None = None
+
     supervisor_max_hops: int = Field(default=3, ge=1, le=6)
     worker_max_tool_rounds: int = Field(default=4, ge=1, le=8)
     worker_max_tool_calls: int = Field(default=6, ge=1, le=20)

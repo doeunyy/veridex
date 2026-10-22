@@ -52,3 +52,12 @@ async def test_missing_manifest_is_safe(tmp_path):
     ) as client:
         response = await client.get("/attribution")
     assert response.status_code == 503
+
+
+def test_root_license_notice_is_current():
+    from pathlib import Path
+
+    from veridex.api.attribution import render_notice
+
+    notice = Path(__file__).resolve().parents[1] / "CORPUS_LICENSE_NOTICE.md"
+    assert notice.read_text() == render_notice(DEFAULT_MANIFEST)
