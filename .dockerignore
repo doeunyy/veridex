@@ -1,37 +1,45 @@
+# Build context for the v2 image: source, pinned requirements and the Corpus v3 bundle.
 .git
 .github
 .venv
+.claude
 .env
 .env.*
 !.env.example
+.envrc
+*.pem
+*.key
+.aws
+.ssh
+.agents
+.codex
 
 __pycache__
 .pytest_cache
 .ruff_cache
-
 *.pyc
 *.log
-
-data
-.artifacts
-.docker-artifacts
-PROCESS_LOG.md
-.agents
-.codex
-.aws
-.ssh
-.envrc
-*.pem
-*.key
-mcp_config.json
-outputs
-scratch
-logs
-reports/generated
 .DS_Store
 
-tests
-docs
+# Anchored with "/" so gcloud does not also drop nested paths such as src/veridex/data.
+/tests
+/docs
+/PROCESS_LOG.md
+/submission_artifacts
+/.docker-artifacts
+/outputs
+/scratch
+/logs
 
-# Private coursework ZIP artifacts; supplied only through the rag named context
-/submission_artifacts/
+# Only the manifest from data/, and only the built bundle from .artifacts/.
+# (gitignore-style re-includes: parent directories must be re-included first.)
+/data/*
+!/data/corpus_v3
+/data/corpus_v3/*
+!/data/corpus_v3/papers.json
+/.artifacts/*
+!/.artifacts/corpus_v3
+/.artifacts/corpus_v3/*
+!/.artifacts/corpus_v3/papers
+!/.artifacts/corpus_v3/chroma
+!/.artifacts/corpus_v3/catalog.db
