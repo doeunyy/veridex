@@ -27,9 +27,9 @@ class Settings(BaseSettings):
     port: int = 8080
 
     api_max_request_body_bytes: int = Field(default=65_536, ge=1024, le=1_048_576)
-    api_max_active_requests: int = Field(default=1, ge=1, le=64)
-    api_max_waiting_requests: int = Field(default=0, ge=0, le=128)
-    api_request_timeout_seconds: float = Field(default=180, gt=0, le=300, allow_inf_nan=False)
+    api_max_active_requests: int = Field(default=4, ge=1, le=64)
+    api_max_waiting_requests: int = Field(default=4, ge=0, le=128)
+    api_request_timeout_seconds: float = Field(default=240, gt=0, le=300, allow_inf_nan=False)
     api_queue_timeout_seconds: float = Field(default=30, gt=0, le=300, allow_inf_nan=False)
 
     agent_max_tool_calls: int = Field(default=8, ge=1, le=32)
@@ -52,8 +52,6 @@ class Settings(BaseSettings):
     state_sqlite_path: Path = Path("./.artifacts/state/conversations.db")
     firestore_project_id: str | None = None
     firestore_collection: str = "veridex_conversations"
-
-    corpus_attribution_path: Path | None = None
 
     corpus_manifest_path: Path = Path("./data/corpus_v3/papers.json")
     documents_dir: Path = Path("./.artifacts/corpus_v3/papers")

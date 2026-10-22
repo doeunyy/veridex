@@ -80,7 +80,7 @@ def create_app(
     application.state.lifecycle_started = False
     application.state.chat_tasks = set()
     config = config or settings
-    attribution = load_attribution(config.corpus_attribution_path)
+    attribution = load_attribution(config.corpus_manifest_path)
     application.state.admission = Admission(config)
     application.add_middleware(ChatLimitsMiddleware, state=application.state, config=config)
 
