@@ -1,0 +1,313 @@
+{
+  "version": "questions_v3",
+  "created": "2026-10-22",
+  "note": "References for rag/summary/data questions were written from Corpus v3 text and the paper catalog. Web questions have no fixed reference because current information changes; they are scored with reference-free metrics only. Compare questions (added 2026-10-22) combine two papers or two agents and are expected to route to OpenAI.",
+  "questions": [
+    {
+      "id": "rag-01",
+      "category": "rag",
+      "question": "What reflection tokens does Self-RAG use and what does each one decide?",
+      "reference": "Self-RAG uses four types of reflection tokens: Retrieve decides whether to retrieve passages; ISREL judges whether a retrieved passage is relevant; ISSUP judges whether the output is fully, partially or not supported by the passage; and ISUSE rates how useful the response is on a 1 to 5 scale. ISREL, ISSUP and ISUSE are critique tokens.",
+      "reference_documents": [
+        "self_rag_2023"
+      ]
+    },
+    {
+      "id": "rag-02",
+      "category": "rag",
+      "question": "How does RETRO use retrieval, and does it need to train its retriever?",
+      "reference": "RETRO retrieves neighbouring chunks from a very large database (trillions of tokens) for each chunk of the input and integrates them through chunked cross-attention. Retrieval uses a pre-trained frozen BERT model, so no retriever network has to be trained or updated, and retrieval is performed throughout pre-training.",
+      "reference_documents": [
+        "retro_2021"
+      ]
+    },
+    {
+      "id": "rag-03",
+      "category": "rag",
+      "question": "What kind of question does GraphRAG target, and how does it build its index?",
+      "reference": "GraphRAG targets global, query-focused summarization questions over an entire text corpus, which standard RAG handles poorly. It uses an LLM to build a knowledge graph of entities and relationships, partitions the graph into a hierarchy of communities, and generates community summaries bottom-up that are used to answer the question.",
+      "reference_documents": [
+        "graphrag_2024"
+      ]
+    },
+    {
+      "id": "rag-04",
+      "category": "rag",
+      "question": "How does RAPTOR build its retrieval tree and how is the tree queried?",
+      "reference": "RAPTOR splits the corpus into short chunks, then recursively clusters chunks by semantic similarity and summarizes each cluster with an LLM, building a tree from the leaves upward. It is queried either by tree traversal, layer by layer, or with a collapsed tree that evaluates nodes across all layers together.",
+      "reference_documents": [
+        "raptor_2024"
+      ]
+    },
+    {
+      "id": "rag-05",
+      "category": "rag",
+      "question": "What does RECOMP compress and what are its two compressors?",
+      "reference": "RECOMP compresses retrieved documents into a textual summary before prepending it to the language model input. It proposes an extractive compressor that selects relevant sentences from the retrieved documents and an abstractive compressor that generates a summary.",
+      "reference_documents": [
+        "recomp_2023"
+      ]
+    },
+    {
+      "id": "rag-06",
+      "category": "rag",
+      "question": "How does Adaptive-RAG choose between retrieval strategies?",
+      "reference": "Adaptive-RAG first classifies the complexity of the query and then selects a strategy accordingly: no retrieval for the simplest queries, single-step retrieval for moderately complex queries, and multi-step retrieval for complex multi-hop queries.",
+      "reference_documents": [
+        "adaptive_rag_2024"
+      ]
+    },
+    {
+      "id": "rag-07",
+      "category": "rag",
+      "question": "What retrieval unit does Dense X Retrieval propose instead of passages or sentences?",
+      "reference": "Dense X Retrieval proposes using propositions, atomic self-contained expressions of a fact, as the retrieval unit, and finds that indexing by propositions improves both passage retrieval and downstream open-domain QA compared with passages or sentences.",
+      "reference_documents": [
+        "dense_x_retrieval_2023"
+      ]
+    },
+    {
+      "id": "rag-08",
+      "category": "rag",
+      "question": "How does ReAct change the action space of a language model agent?",
+      "reference": "ReAct augments the agent's action space with the space of language, so the agent can produce thoughts (reasoning traces) as well as task actions. Thoughts do not affect the environment or produce observations; they help plan, track progress and decide the next action, while actions such as Wikipedia search retrieve information.",
+      "reference_documents": [
+        "react_2022"
+      ]
+    },
+    {
+      "id": "rag-09",
+      "category": "rag",
+      "question": "How does Reflexion improve an agent without updating model weights?",
+      "reference": "Reflexion uses verbal reinforcement: it converts binary or scalar feedback from the environment into a textual self-reflection that is stored in memory and added as context in the next episode, acting as a semantic gradient signal so the agent learns from prior mistakes without weight updates.",
+      "reference_documents": [
+        "reflexion_2023"
+      ]
+    },
+    {
+      "id": "rag-10",
+      "category": "rag",
+      "question": "How does Tree of Thoughts differ from chain-of-thought prompting, and how much did it help on Game of 24?",
+      "reference": "Chain-of-thought follows a single left-to-right chain of intermediate reasoning steps, while Tree of Thoughts explores multiple reasoning paths as a search over a tree of thoughts, allowing lookahead and backtracking. On Game of 24, chain-of-thought with GPT-4 solved 4% of tasks while Tree of Thoughts achieved 74%.",
+      "reference_documents": [
+        "tree_of_thoughts_2023",
+        "chain_of_thought_2022"
+      ]
+    },
+    {
+      "id": "rag-11",
+      "category": "rag",
+      "question": "What is self-consistency decoding?",
+      "reference": "Self-consistency replaces greedy decoding in chain-of-thought prompting with sample-and-marginalize: it samples a diverse set of reasoning paths from the model and selects the most consistent final answer across them.",
+      "reference_documents": [
+        "self_consistency_2022"
+      ]
+    },
+    {
+      "id": "rag-12",
+      "category": "rag",
+      "question": "What makes agents in AutoGen conversable, and how is conversation flow controlled?",
+      "reference": "In AutoGen every agent is conversable: it can send and receive messages and generate replies, with an auto-reply mechanism that drives the conversation. Control flow combines natural language (prompting LLM-backed agents) and programming (code-defined control).",
+      "reference_documents": [
+        "autogen_2023"
+      ]
+    },
+    {
+      "id": "rag-13",
+      "category": "rag",
+      "question": "How does MetaGPT organize its agents?",
+      "reference": "MetaGPT encodes Standardized Operating Procedures (SOPs) into a multi-agent workflow in which agents take specialized roles such as Product Manager, Architect and Engineer, and produce structured intermediate outputs such as requirement documents, design artifacts and interface specifications.",
+      "reference_documents": [
+        "metagpt_2023"
+      ]
+    },
+    {
+      "id": "rag-14",
+      "category": "rag",
+      "question": "How does multiagent debate improve factuality and reasoning?",
+      "reference": "Multiple language model instances propose answers and then debate over several rounds, critiquing and updating their responses in light of the other agents' answers before converging on a final answer. This improved factual accuracy and reasoning over single-model baselines, even when all agents were initially wrong.",
+      "reference_documents": [
+        "multiagent_debate_2023"
+      ]
+    },
+    {
+      "id": "rag-15",
+      "category": "rag",
+      "question": "What does Language Agent Tree Search (LATS) combine?",
+      "reference": "LATS unifies reasoning, acting and planning in language model agents by integrating Monte Carlo Tree Search with LM-based agents, expanding ReAct into a search over possible reasoning and acting steps and using external feedback.",
+      "reference_documents": [
+        "lats_2023"
+      ]
+    },
+    {
+      "id": "rag-16",
+      "category": "rag",
+      "question": "Which quality aspects does the RAGAS paper propose for evaluating RAG, and how is faithfulness computed?",
+      "reference": "RAGAS proposes reference-free metrics for faithfulness, answer relevance and context relevance. Faithfulness is computed by extracting statements from the answer with an LLM, checking which statements can be inferred from the context, and dividing the number of supported statements by the total number of statements.",
+      "reference_documents": [
+        "ragas_2023"
+      ]
+    },
+    {
+      "id": "rag-17",
+      "category": "rag",
+      "question": "What does SWE-bench ask models to do and how are solutions checked?",
+      "reference": "SWE-bench gives a model a real GitHub issue and the full codebase of a popular Python repository and asks it to produce a patch that resolves the issue, often editing multiple files and functions. Solutions are verified by running the repository's unit tests.",
+      "reference_documents": [
+        "swe_bench_2023"
+      ]
+    },
+    {
+      "id": "rag-18",
+      "category": "rag",
+      "question": "What is the agent-computer interface introduced by SWE-agent?",
+      "reference": "An agent-computer interface (ACI) is an abstraction layer between a language model agent and the computer, with commands and feedback designed for LM agents (for example for viewing and editing files) instead of a raw Linux shell. SWE-agent's ACI improved performance on SWE-bench without changing the model's weights.",
+      "reference_documents": [
+        "swe_agent_2024"
+      ]
+    },
+    {
+      "id": "rag-19",
+      "category": "rag",
+      "question": "How does SelfCheckGPT detect hallucinations without external resources?",
+      "reference": "SelfCheckGPT samples multiple responses from the same black-box LLM and checks their consistency with the original response: facts the model knows tend to be consistent across samples, while hallucinated facts diverge. It needs no external database and works zero-resource on black-box models.",
+      "reference_documents": [
+        "selfcheckgpt_2023"
+      ]
+    },
+    {
+      "id": "rag-20",
+      "category": "rag",
+      "question": "What bias does Length-Controlled AlpacaEval remove and how?",
+      "reference": "It removes the length bias of LLM-based auto-evaluators, which prefer longer outputs. It fits a generalized linear model of the evaluator's preference conditioned on output length and reports the preference predicted as if the model and baseline outputs had the same length, which increases correlation with Chatbot Arena.",
+      "reference_documents": [
+        "length_controlled_alpacaeval_2024"
+      ]
+    },
+    {
+      "id": "dat-01",
+      "category": "data",
+      "question": "How many papers per topic are in the corpus?",
+      "reference": "The corpus has 42 papers: 12 evaluation, 11 agent reasoning and tools, 10 multi-agent systems, and 9 RAG and retrieval.",
+      "reference_documents": []
+    },
+    {
+      "id": "dat-02",
+      "category": "data",
+      "question": "Which RAG and retrieval papers in the corpus were first posted in 2024?",
+      "reference": "Four: adaptive_rag_2024 (Adaptive-RAG), graphrag_2024 (GraphRAG), m3_embedding_2024 (M3-Embedding) and raptor_2024 (RAPTOR).",
+      "reference_documents": []
+    },
+    {
+      "id": "dat-03",
+      "category": "data",
+      "question": "Which three papers in the corpus have the most pages?",
+      "reference": "helm_2022 with 162 pages, swe_agent_2024 with 118 pages and camel_2023 with 77 pages.",
+      "reference_documents": []
+    },
+    {
+      "id": "dat-04",
+      "category": "data",
+      "question": "Which papers in the corpus list Shunyu Yao as an author?",
+      "reference": "Six: react_2022, reflexion_2023, swe_agent_2024, swe_bench_2023, tau_bench_2024 and tree_of_thoughts_2023.",
+      "reference_documents": []
+    },
+    {
+      "id": "sum-01",
+      "category": "summary",
+      "question": "Summarize the RAPTOR paper.",
+      "reference": "RAPTOR builds a tree over a corpus by recursively clustering text chunks and summarizing each cluster with an LLM, so retrieval can draw on both details and higher-level summaries; it is queried by tree traversal or a collapsed tree, and the full tree helps answer both thematic and detail questions.",
+      "reference_documents": [
+        "raptor_2024"
+      ]
+    },
+    {
+      "id": "sum-02",
+      "category": "summary",
+      "question": "Summarize the Reflexion paper.",
+      "reference": "Reflexion lets language agents learn from trial and error through verbal reinforcement: an actor generates trajectories, an evaluator scores them, and a self-reflection model turns feedback into text stored in episodic memory and used in the next trial, improving decision making, reasoning and coding without weight updates.",
+      "reference_documents": [
+        "reflexion_2023"
+      ]
+    },
+    {
+      "id": "sum-03",
+      "category": "summary",
+      "question": "Summarize the SWE-bench paper.",
+      "reference": "SWE-bench is a benchmark of real GitHub issues from popular Python repositories in which models must edit a large codebase to resolve each issue, verified by unit tests; it requires cross-file edits and the best model at the time, Claude 2, solved only 1.96% of issues.",
+      "reference_documents": [
+        "swe_bench_2023"
+      ]
+    },
+    {
+      "id": "web-01",
+      "category": "web",
+      "question": "What are the latest developments in LLM agent benchmarks in 2026?",
+      "reference": null,
+      "reference_documents": []
+    },
+    {
+      "id": "web-02",
+      "category": "web",
+      "question": "What did the original RAG paper by Lewis et al. (2020) propose?",
+      "reference": null,
+      "reference_documents": []
+    },
+    {
+      "id": "web-03",
+      "category": "web",
+      "question": "What is the Model Context Protocol and who maintains it?",
+      "reference": null,
+      "reference_documents": []
+    },
+    {
+      "id": "cmp-01",
+      "category": "compare",
+      "question": "Compare how RAPTOR and GraphRAG support questions that need information from across a whole corpus.",
+      "reference": "Both build hierarchical summaries so retrieval can use higher-level information. RAPTOR recursively clusters text chunks by semantic similarity and summarizes each cluster into a tree that is queried by tree traversal or a collapsed tree. GraphRAG uses an LLM to extract a knowledge graph of entities and relationships, partitions it into a hierarchy of communities and generates community summaries bottom-up, which are used to answer global, query-focused summarization questions over the entire corpus.",
+      "reference_documents": [
+        "raptor_2024",
+        "graphrag_2024"
+      ]
+    },
+    {
+      "id": "cmp-02",
+      "category": "compare",
+      "question": "How do Reflexion and LATS differ in the way they use feedback to improve a language agent?",
+      "reference": "Reflexion turns environment feedback into a verbal self-reflection that is stored in memory and added as context for the next trial, so the agent improves across repeated attempts without weight updates. LATS integrates Monte Carlo Tree Search with language agents: it expands ReAct into a search over possible reasoning and acting steps and uses LM-powered value functions and self-reflections to guide exploration, using external feedback within the search.",
+      "reference_documents": [
+        "reflexion_2023",
+        "lats_2023"
+      ]
+    },
+    {
+      "id": "cmp-03",
+      "category": "compare",
+      "question": "Compare the SWE-agent and Agentless approaches to resolving GitHub issues.",
+      "reference": "SWE-agent is an autonomous LM agent whose performance comes from an agent-computer interface (ACI): commands and feedback designed for LM agents to view, search and edit files instead of a raw Linux shell. Agentless argues that complex autonomous agents are not necessary and uses a simple three-phase process of localization, repair and patch validation without letting the LLM decide future actions or use complex tools; on SWE-bench Lite it reached 32.00% at about $0.70 per issue.",
+      "reference_documents": [
+        "swe_agent_2024",
+        "agentless_2024"
+      ]
+    },
+    {
+      "id": "cmp-04",
+      "category": "compare",
+      "question": "What are the differences between RAGAS and ARES for evaluating RAG systems?",
+      "reference": "RAGAS is a reference-free framework that prompts an LLM with fixed prompts to score faithfulness, answer relevance and context relevance. ARES trains tailored LM judges for context relevance, answer faithfulness and answer relevance using a synthetic dataset of question-answer pairs generated from in-domain passages, and needs only a small human preference validation set (about 150 annotated datapoints) and a few in-domain examples; ARES reports higher evaluation accuracy than RAGAS on context relevance and answer relevance.",
+      "reference_documents": [
+        "ragas_2023",
+        "ares_2023"
+      ]
+    },
+    {
+      "id": "cmp-05",
+      "category": "compare",
+      "question": "How many evaluation papers are in the corpus, and what does SelfCheckGPT do?",
+      "reference": "The corpus has 12 papers in the evaluation topic. SelfCheckGPT detects hallucinations in black-box LLM outputs without external resources by sampling multiple responses from the same model and checking their consistency with the original response; facts the model knows stay consistent across samples while hallucinated facts diverge.",
+      "reference_documents": [
+        "selfcheckgpt_2023"
+      ]
+    }
+  ]
+}

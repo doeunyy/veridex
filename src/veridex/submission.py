@@ -1,7 +1,5 @@
-"""Explicit source-only or private coursework archive plans; no runtime changes."""
+"""Source-only submission archive of a frozen Git commit; no corpus, index, or secrets."""
 
-import hashlib
-import json
 import re
 import subprocess
 import zipfile
@@ -9,19 +7,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
-from veridex.deployment.runtime import BUNDLE_SHA256, SPEC
-from veridex.rag.artifacts import ArtifactError, validate_bundle
+from veridex.rag.artifacts import ArtifactError
 
-PREFIX = "submission_artifacts/veridex-rag-v2-local"
-VECTOR_DIR = "chroma/d3bcc165-69e4-4140-b0b7-f0682afdb815"
-BUNDLE_FILES = frozenset(
-    {"bundle.json", "manifest.json", "chroma/chroma.sqlite3"}
-    | {f"papers/{identifier}.pdf" for identifier in SPEC.document_ids}
-    | {
-        f"{VECTOR_DIR}/{name}"
-        for name in ("header.bin", "data_level0.bin", "length.bin", "link_lists.bin")
-    }
-)
 ROOT_FILES = frozenset(
     {
         ".dockerignore",
@@ -33,6 +20,8 @@ ROOT_FILES = frozenset(
         "PROCESS_LOG.md",
         "pyproject.toml",
         "uv.lock",
+        "requirements.txt",
+        ".gcloudignore",
         "CORPUS_LICENSE_NOTICE.md",
     }
 )
@@ -43,14 +32,16 @@ REQUIRED = frozenset(
         "Dockerfile",
         "pyproject.toml",
         "uv.lock",
+        "requirements.txt",
+        ".env.example",
+        "deploy/cloud_run.sh",
         "scripts/serve_api.py",
-        "scripts/container_entrypoint.py",
+        "scripts/check_bundle.py",
+        "src/veridex/agents/graph.py",
         "src/veridex/mcp/servers/evidence.py",
-        "src/veridex/mcp/servers/web_search.py",
         "src/veridex/mcp/servers/workspace.py",
-        "docs/rag_attribution_v2.json",
-        "src/veridex/deployment/notices/CC-BY-4.0.txt",
-        "src/veridex/deployment/notices/CC-BY-NC-4.0.txt",
+        "src/veridex/mcp/servers/catalog.py",
+        "data/corpus_v3/papers.json",
     }
 )
 CREDENTIAL = re.compile(
@@ -65,18 +56,33 @@ def source_path(name: str) -> bool:
     if any(part in {"node_modules", "__pycache__", "venv", "build", "dist"} for part in p.parts):
         return False
     if any(part.startswith(".") for part in p.parts) and name not in ROOT_FILES:
-        return name == ".github/pull_request_template.md"
+        return name == ".github/pull_request_template.md" or (
+            p.parts[:2] == (".github", "workflows") and len(p.parts) == 3 and p.suffix == ".yml"
+        )
     if p.name in {"credentials.json", "service-account.json", "development_notes.md"}:
         return False
     return (
         name in ROOT_FILES
         or (p.parts[0] in {"src", "scripts", "tests"} and p.suffix == ".py")
+        or (
+            p.parts[:4] == ("src", "veridex", "web", "static")
+            and len(p.parts) == 5
+            and p.suffix in {".html", ".css", ".js"}
+        )
         or (p.parts[0] == "docs" and len(p.parts) == 2 and p.suffix in {".md", ".mmd", ".json"})
         or (
-            p.parts[:4] == ("src", "veridex", "deployment", "notices")
-            and p.name in {"CC-BY-4.0.txt", "CC-BY-NC-4.0.txt"}
+            p.parts[:2] == ("docs", "v1")
+            and len(p.parts) == 3
+            and p.suffix in {".md", ".mmd", ".json"}
         )
-        or name in {"data/samples/manifest.json", "data/samples/eval_questions.json"}
+        or (p.parts[0] == "deploy" and len(p.parts) == 2 and p.suffix == ".sh")
+        or (p.parts[0] == "eval" and len(p.parts) <= 3 and p.suffix in {".json", ".jsonl", ".md"})
+        or name
+        in {
+            "data/samples/manifest.json",
+            "data/samples/eval_questions.json",
+            "data/corpus_v3/papers.json",
+        }
     )
 
 
@@ -94,7 +100,7 @@ def check_source(files: dict[str, bytes]) -> None:
             raise ArtifactError("Binary content is not approved source.")
         for match in CREDENTIAL.finditer(text):
             if (name, match.group()) != (
-                "tests/test_mcp_web_search.py",
+                "tests/test_mcp_multi_server.py",
                 "tvly-" + "test-secret-never-log",
             ):
                 raise ArtifactError("Credential-like material in submission source.")
@@ -126,92 +132,16 @@ def read_git_source(root: Path, ref: str) -> tuple[dict[str, bytes], str, int]:
     return files, commit, int(git("show", "-s", "--format=%ct", commit))
 
 
-def plan_archive(
-    source: dict[str, bytes],
-    *,
-    commit: str,
-    timestamp: int,
-    mode: str = "source-only",
-    bundle: Path | None = None,
-) -> ArchivePlan:
+def plan_archive(source: dict[str, bytes], *, commit: str, timestamp: int) -> ArchivePlan:
     check_source(source)
-    files = dict(source)
-    if mode == "source-only":
-        if bundle is not None:
-            raise ArtifactError("Source-only mode cannot include a corpus bundle.")
-    elif mode == "coursework":
-        if bundle is None or "CORPUS_LICENSE_NOTICE.md" not in files:
-            raise ArtifactError("Coursework mode requires the approved bundle and root notice.")
-        # Capture exact immutable bytes first. Validate then recompare to reject source drift.
-        paths = set()
-        for p in bundle.rglob("*"):
-            if p.is_symlink():
-                raise ArtifactError("Bundle symlinks are forbidden.")
-            if p.is_file():
-                paths.add(p.relative_to(bundle).as_posix())
-        if bundle.is_symlink() or paths != BUNDLE_FILES:
-            raise ArtifactError("Coursework bundle inventory is not the approved twelve files.")
-        captured = {name: (bundle / name).read_bytes() for name in paths}
-        if hashlib.sha256(captured["bundle.json"]).hexdigest() != BUNDLE_SHA256:
-            raise ArtifactError("Coursework bundle fingerprint mismatch.")
-        metadata = json.loads(captured["bundle.json"])
-        if hashlib.sha256(files["uv.lock"]).hexdigest() != metadata["lock_sha256"]:
-            raise ArtifactError("Submission lockfile differs from the approved bundle.")
-        validate_bundle(bundle, expected=SPEC, metadata_sha256=BUNDLE_SHA256, probe=False)
-        for name in paths:
-            if (bundle / name).read_bytes() != captured[name]:
-                raise ArtifactError("Bundle changed during submission validation.")
-        if (
-            any(p.is_symlink() for p in bundle.rglob("*"))
-            or {p.relative_to(bundle).as_posix() for p in bundle.rglob("*") if p.is_file()}
-            != BUNDLE_FILES
-        ):
-            raise ArtifactError("Bundle inventory changed during submission validation.")
-        for name, data in captured.items():
-            if name != "bundle.json":
-                record = metadata["files"][name]
-                if (
-                    len(data) != record["size"]
-                    or hashlib.sha256(data).hexdigest() != record["sha256"]
-                ):
-                    raise ArtifactError("Coursework artifact checksum mismatch.")
-            files[f"{PREFIX}/{name}"] = data
-    else:
-        raise ArtifactError("Unknown submission mode.")
-    return ArchivePlan(files, commit, timestamp, mode)
+    return ArchivePlan(dict(source), commit, timestamp, "source-only")
 
 
 def write_archive(plan: ArchivePlan, output: Path) -> None:
     """Explicit write only; never overwrite an existing archive or include directory contents."""
     if output.suffix != ".zip" or output.exists():
         raise ArtifactError("A new ZIP output path is required; existing archives are immutable.")
-    source = {name: data for name, data in plan.files.items() if not name.startswith(PREFIX + "/")}
-    check_source(source)
-    corpus = {
-        name.removeprefix(PREFIX + "/"): data
-        for name, data in plan.files.items()
-        if name.startswith(PREFIX + "/")
-    }
-    if plan.mode == "source-only" and corpus:
-        raise ArtifactError("Source-only archives cannot contain corpus entries.")
-    if plan.mode == "coursework":
-        if set(corpus) != BUNDLE_FILES or "CORPUS_LICENSE_NOTICE.md" not in source:
-            raise ArtifactError("Invalid coursework entry inventory.")
-        if hashlib.sha256(corpus["bundle.json"]).hexdigest() != BUNDLE_SHA256:
-            raise ArtifactError("Coursework bundle fingerprint mismatch.")
-        metadata = json.loads(corpus["bundle.json"])
-        if hashlib.sha256(source["uv.lock"]).hexdigest() != metadata["lock_sha256"]:
-            raise ArtifactError("Submission lockfile differs from the approved bundle.")
-        for name, data in corpus.items():
-            if name != "bundle.json":
-                record = metadata["files"][name]
-                if (
-                    hashlib.sha256(data).hexdigest() != record["sha256"]
-                    or len(data) != record["size"]
-                ):
-                    raise ArtifactError("Coursework entry checksum mismatch.")
-    elif plan.mode != "source-only":
-        raise ArtifactError("Unknown submission mode.")
+    check_source(plan.files)
     date = datetime.fromtimestamp(plan.timestamp, UTC).timetuple()[:6]
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("xb") as stream:

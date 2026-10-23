@@ -1,4 +1,3 @@
-import json
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event, Lock
 from unittest.mock import MagicMock
@@ -6,12 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import AIMessage
-from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
 
-from veridex.agent.state import AgentState
-from veridex.agent.tools import search_evidence
 from veridex.rag import vectorstore
 from veridex.rag.retrieval import search_documents
 
@@ -125,28 +119,12 @@ def test_real_chroma_parallel_cold_start_and_six_tools(isolated_store):
         for name in ("RAG", "Self-RAG", "ReAct")
     ]
     assert vectorstore.index_documents(documents) == 3
-    node = ToolNode([search_evidence], handle_tool_errors=True)
-    calls = [
-        {
-            "name": "search_evidence",
-            "args": {"query": f"comparison {index}", "top_k": 3},
-            "id": str(index),
-            "type": "tool_call",
-        }
-        for index in range(6)
-    ]
-    graph = StateGraph(AgentState)
-    graph.add_node("tools", node)
-    graph.add_edge(START, "tools")
-    graph.add_edge("tools", END)
-    result = graph.compile().invoke({"messages": [AIMessage(content="", tool_calls=calls)]})
-    result["messages"] = result["messages"][1:]
-    assert len(result["messages"]) == 6
-
-    for message in result["messages"]:
-        assert message.status == "success", message.content
-        passages = json.loads(message.content)["passages"]
-        assert {passage["document_id"] for passage in passages} == {"RAG", "Self-RAG", "ReAct"}
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        results = list(
+            executor.map(lambda i: search_documents(f"comparison {i}", top_k=3), range(6))
+        )
+    for passages in results:
+        assert {doc.metadata["document_id"] for doc, _ in passages} == {"RAG", "Self-RAG", "ReAct"}
 
 
 def test_replaced_index_requires_restart_and_rebuild_is_guarded(isolated_store):

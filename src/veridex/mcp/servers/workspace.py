@@ -1,6 +1,7 @@
-"""Read-only, manifest-approved access to the local PDF research corpus."""
+"""Read-only, manifest-approved access to the Corpus v3 PDF papers."""
 
 import asyncio
+import json
 import os
 import re
 import stat
@@ -15,7 +16,7 @@ from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, Field
 
 from veridex.config import settings
-from veridex.rag.ingestion import load_manifest
+from veridex.rag.v3.manifest import Paper
 
 MAX_FILE_BYTES = 20 * 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
@@ -47,22 +48,14 @@ _SENSITIVE = {
 }
 
 
-class CatalogEntry(BaseModel):
-    id: str = Field(strict=True, min_length=1, max_length=128)
-    filename: str = Field(strict=True, min_length=1, max_length=256)
-    title: str = Field(strict=True, min_length=1, max_length=300)
-    domain: str = Field(strict=True, max_length=100)
-    year: int = Field(strict=True, ge=1, le=3000)
-    source_url: str = Field(strict=True, max_length=2048)
-
-
 class WorkspaceDocument(BaseModel):
     document_id: str = Field(description="Stable relative PDF filename within the approved corpus.")
-    paper_id: str
+    paper_id: str = Field(description="Citation ID, also the search_evidence document_id filter.")
     title: str
-    domain: str
+    topic: str
     year: int
     source_url: str
+    license: str
     format: str = "pdf"
     size_bytes: int
     page_count: int
@@ -99,17 +92,17 @@ def _identifier(document_id: str) -> tuple[str, ...]:
     return parts
 
 
-def _catalog() -> dict[str, CatalogEntry]:
+def _catalog() -> dict[str, Paper]:
     # This metadata path is administrator-configured, never supplied by MCP callers.
-    path = settings.workspace_manifest_path
+    path = settings.corpus_manifest_path
     if path.stat().st_size > MAX_MANIFEST_BYTES:
         raise ToolError("Workspace document catalog exceeds the size limit.")
-    entries = load_manifest(path)
+    entries = json.loads(path.read_text(encoding="utf-8"))["papers"]
     if len(entries) > MAX_DOCUMENTS:
         raise ToolError("Workspace document catalog exceeds the document limit.")
     catalog = {}
     for item in entries:
-        entry = CatalogEntry.model_validate(item)
+        entry = Paper.model_validate(item)
         try:
             _identifier(entry.filename)
         except ToolError:
@@ -159,14 +152,15 @@ def _open_pdf(document_id: str):
         os.close(directory)
 
 
-def _metadata(entry: CatalogEntry, size: int, pages: int) -> WorkspaceDocument:
+def _metadata(entry: Paper, size: int, pages: int) -> WorkspaceDocument:
     return WorkspaceDocument(
         document_id=entry.filename,
-        paper_id=entry.id,
+        paper_id=entry.doc_id,
         title=entry.title,
-        domain=entry.domain,
+        topic=entry.topic,
         year=entry.year,
-        source_url=entry.source_url,
+        source_url=entry.abs_url,
+        license=entry.license,
         size_bytes=size,
         page_count=pages,
     )

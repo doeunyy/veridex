@@ -76,7 +76,11 @@ def test_default_configuration_is_lazy_and_scoped(tmp_path):
     connections = mcp_client.default_connections(
         project_root=tmp_path, config=config, python_executable="python-test"
     )
-    assert list(connections) == ["evidence", "web_search", "workspace"]
+    assert list(connections) == ["evidence", "workspace", "catalog", "tavily"]
+    assert connections.pop("tavily") == {
+        "transport": "streamable_http",
+        "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=tavily-secret",
+    }
     for name, connection in connections.items():
         assert connection["transport"] == "stdio"
         assert connection["command"] == "python-test"
@@ -85,9 +89,13 @@ def test_default_configuration_is_lazy_and_scoped(tmp_path):
         assert connection["cwd"] == str(tmp_path)
     assert connections["evidence"]["env"]["OPENAI_API_KEY"] == "openai-secret"
     assert "TAVILY_API_KEY" not in connections["evidence"]["env"]
-    assert connections["web_search"]["env"]["TAVILY_API_KEY"] == "tavily-secret"
-    assert "OPENAI_API_KEY" not in connections["web_search"]["env"]
-    assert connections["workspace"]["env"]["DOCUMENTS_DIR"] == str(tmp_path / "data/papers")
+    assert all("TAVILY_API_KEY" not in c["env"] for c in connections.values())
+    assert connections["workspace"]["env"]["DOCUMENTS_DIR"] == str(
+        tmp_path / ".artifacts/corpus_v3/papers"
+    )
+    assert connections["catalog"]["env"]["CATALOG_PATH"] == str(
+        tmp_path / ".artifacts/corpus_v3/catalog.db"
+    )
     assert "API_KEY" not in " ".join(connections["workspace"]["env"])
     client = mcp_client.create_client(connections)
     connections["evidence"]["args"].append("mutated")

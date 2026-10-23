@@ -1,104 +1,63 @@
-import json
 from types import SimpleNamespace
 
 import httpx
 import pytest
 
-from scripts.prepare_notices import corpus_notice
 from veridex.api.app import create_app
+from veridex.api.attribution import load_attribution
 from veridex.config import Settings
-from veridex.deployment.runtime import SPEC
-from veridex.rag.artifacts import ArtifactError, FileRecord
+from veridex.rag.v3.manifest import DEFAULT_MANIFEST, load_manifest
 
 
-@pytest.fixture
-def metadata():
-    papers = []
-    files = {}
-    for identifier in SPEC.document_ids:
-        papers.append(
-            {
-                "id": identifier,
-                "filename": identifier + ".pdf",
-                "title": "Title " + identifier,
-                "authors": ["Author A", "Author B"],
-                "source_url": "https://example.test/" + identifier,
-                "identified_local_version": "publisher version",
-                "sha256": "a" * 64,
-                "license_id": "CC-BY-NC-4.0" if identifier == "netmhcpan_2020" else "CC-BY-4.0",
-                "license_url": "https://creativecommons.org/licenses/by/4.0/",
-                "copyright_notice": "Copyright authors",
-                "modifications": ["extracted and chunked"],
-                "third_party_review": "External supplements excluded",
-            }
-        )
-        files["papers/" + identifier + ".pdf"] = FileRecord(size=1, sha256="a" * 64)
-    return SimpleNamespace(
-        files=files,
-        embedding_model_provenance=json.dumps(
-            {"attribution": {"documents": papers}, "private": "PRIVATE-SENTINEL"}
-        ),
+def test_notice_lists_every_corpus_paper_with_license_and_authors():
+    notice = load_attribution(DEFAULT_MANIFEST)
+    manifest = load_manifest(DEFAULT_MANIFEST)
+    assert [p.doc_id for p in notice.papers] == [p.doc_id for p in manifest.papers]
+    assert {p.license for p in notice.papers} <= {"CC-BY-4.0", "CC0-1.0"}
+    assert all(
+        p.authors and p.source_url.startswith("https://arxiv.org/abs/") for p in notice.papers
     )
-
-
-def test_notice_matches_source_and_excludes_internal_provenance(metadata):
-    notice = corpus_notice(metadata)
-    assert {d.id for d in notice.documents} == set(SPEC.document_ids)
-    assert all(d.authors == ["Author A", "Author B"] for d in notice.documents)
-    assert "PRIVATE-SENTINEL" not in notice.model_dump_json()
-    assert any("noncommercial" in s for s in notice.limitations)
-
-
-@pytest.mark.parametrize("change", ["hash", "id", "authors"])
-def test_invalid_notice_rejected(metadata, change):
-    data = json.loads(metadata.embedding_model_provenance)
-    paper = data["attribution"]["documents"][0]
-    if change == "hash":
-        paper["sha256"] = "b" * 64
-    elif change == "id":
-        paper["id"] = "rag_2020"
-    else:
-        paper["authors"] = []
-    metadata.embedding_model_provenance = json.dumps(data)
-    with pytest.raises((ArtifactError, ValueError)):
-        corpus_notice(metadata)
+    assert load_attribution(None) is None
+    assert load_attribution(DEFAULT_MANIFEST.with_name("missing.json")) is None
 
 
 @pytest.mark.asyncio
-async def test_readonly_notice_and_chat_link_do_not_change_contract(metadata, tmp_path):
-    notice = corpus_notice(metadata)
-    path = tmp_path / "notice.json"
-    path.write_text(notice.model_dump_json())
-    calls = []
-
-    class Agent:
+async def test_attribution_route_and_chat_link():
+    class Service:
         async def achat(self, query, session_id):
-            calls.append((query, session_id))
-            return "answer"
+            return "ok"
 
-    app = create_app(
-        agent_service=Agent(), config=Settings(_env_file=None, corpus_attribution_path=path)
+    application = create_app(
+        agent_service=Service(),
+        config=Settings(_env_file=None, corpus_manifest_path=DEFAULT_MANIFEST),
     )
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
+        transport=httpx.ASGITransport(app=application), base_url="http://t"
     ) as client:
-        app.state.shutting_down = True
-        assert (await client.get("/attribution")).json() == notice.model_dump()
-        assert calls == []
-        assert (await client.post("/attribution", json={})).status_code == 405
-        app.state.shutting_down = False
-        response = await client.post("/chat", json={"query": "hello", "session_id": "one"})
-        assert response.json() == {"response": "answer"}
-        assert response.headers["link"] == '</attribution>; rel="describedby"'
-        assert calls == [("hello", "one")]
+        notice = (await client.get("/attribution")).json()
+        chat = await client.post("/chat", json={"query": "q", "session_id": "s"})
+    assert notice["corpus"] == "veridex-corpus-v3" and len(notice["papers"]) == 42
+    assert chat.json() == {"response": "ok"}
+    assert chat.headers["Link"] == '</attribution>; rel="describedby"'
 
 
 @pytest.mark.asyncio
-async def test_unconfigured_notice_is_safe():
-    app = create_app(config=Settings(_env_file=None, corpus_attribution_path=None))
+async def test_missing_manifest_is_safe(tmp_path):
+    application = create_app(
+        agent_service=SimpleNamespace(),
+        config=Settings(_env_file=None, corpus_manifest_path=tmp_path / "none.json"),
+    )
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
+        transport=httpx.ASGITransport(app=application), base_url="http://t"
     ) as client:
         response = await client.get("/attribution")
-        assert response.status_code == 503
-        assert response.json() == {"detail": "Corpus attribution is unavailable."}
+    assert response.status_code == 503
+
+
+def test_root_license_notice_is_current():
+    from pathlib import Path
+
+    from veridex.api.attribution import render_notice
+
+    notice = Path(__file__).resolve().parents[1] / "CORPUS_LICENSE_NOTICE.md"
+    assert notice.read_text() == render_notice(DEFAULT_MANIFEST)

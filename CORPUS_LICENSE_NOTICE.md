@@ -1,112 +1,51 @@
-# Corpus v2 — Coursework Attribution and License Notice
+# Corpus v3 attribution and license notice
 
-Included only for this private, noncommercial USC CSCI 599 assignment evaluation.
-This notice is not authorization for automatic public GitHub Release publication.
-Covered CC rights remain available to recipients under the original licenses; this
-statement does not impose additional restrictions on those rights.
+LLM agents, retrieval-augmented generation and evaluation research papers (arXiv, CC BY 4.0 / CC0 only).
 
-The five PDFs are unchanged from the approved local sources. Their extracted text,
-metadata, chunks and stored vectors form the accompanying Chroma index. All five
-were embedded using `text-embedding-3-small`, 1,536 dimensions; 586 chunks total.
-Generation of embeddings/indexes does not remove source copyright obligations.
+Veridex indexes and serves text from the papers below under their stated licenses. Text was extracted and split into passages for retrieval; no other changes were made. Copyright remains with the authors.
+Generated from `data/corpus_v3/papers.json` by `uv run python scripts/corpus_v3.py notice`.
 
-Full attribution metadata: [docs/rag_attribution_v2.json](docs/rag_attribution_v2.json).
-License texts: [CC BY 4.0](src/veridex/deployment/notices/CC-BY-4.0.txt) and
-[CC BY-NC 4.0](src/veridex/deployment/notices/CC-BY-NC-4.0.txt).
-
-
-## Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach
-
-Authors: Zhuowan Li, Cheng Li, Mingyang Zhang, Qiaozhu Mei, Michael Bendersky.
-
-Version: ACL EMNLP Industry Track 2024, pages 881–893; 13-page publisher PDF; DOI 10.18653/v1/2024.emnlp-industry.66.
-
-Source: https://aclanthology.org/2024.emnlp-industry.66/
-
-©2024 Association for Computational Linguistics.
-
-CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/
-
-Changes: PDF text extraction and deterministic chunking. Embeddings and Chroma index generated from these chunks.
-
-Scope: Paper includes benchmark/prompt examples; no separate reproduction exclusion located. Underlying benchmarks, code and supplementary attachments are not independently licensed by this review.
-
-## ReAct: Synergizing Reasoning and Acting in Language Models
-
-Authors: Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, Yuan Cao.
-
-Version: arXiv:2210.03629v3 (10 March 2023), ICLR camera ready, 33 pages.
-
-Source: https://arxiv.org/abs/2210.03629v3
-
-No explicit copyright notice located; preserve any supplied source notices.
-
-CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/
-
-Changes: PDF text extraction and chunking; Extracted Cc controls except TAB/LF/CR escaped after chunking as visible codepoint markers; exact offsets recorded in the historical normalization.json preparation file (not separately included in this package). Embeddings and Chroma index generated from these chunks.
-
-Scope: No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials.
-
-## Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection
-
-Authors: Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, Hannaneh Hajishirzi.
-
-Version: arXiv:2310.11511v1 (17 October 2023), 30 pages.
-
-Source: https://arxiv.org/abs/2310.11511v1
-
-No explicit copyright notice located; preserve any supplied source notices.
-
-CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/
-
-Changes: PDF text extraction and chunking. Embeddings and Chroma index generated from these chunks.
-
-Scope: No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials.
-
-## NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen presentation by concurrent motif deconvolution and integration of MS MHC eluted ligand data
-
-Authors: Birkir Reynisson, Bruno Alvarez, Sinu Paul, Bjoern Peters, Morten Nielsen.
-
-Version: Nucleic Acids Research 48(W1), W449–W454; DOI 10.1093/nar/gkaa379; 6 pages.
-
-Source: https://pmc.ncbi.nlm.nih.gov/articles/PMC7319546/
-
-© The Author(s) 2020. Published by Oxford University Press on behalf of Nucleic Acids Research..
-
-CC-BY-NC-4.0: https://creativecommons.org/licenses/by-nc/4.0/
-
-Changes: PDF text extraction and chunking. Embeddings and Chroma index generated from these chunks.
-
-Scope: No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials.
-
-## Machine learning predictions of MHC-II specificities reveal alternative binding mode of class II epitopes
-
-Authors: Julien Racle, Philippe Guillaume, Julien Schmidt, Justine Michaux, Amédée Larabi, Kelvin Lau, Marta A. S. Perez, Giancarlo Croce, Raphaël Genolet, George Coukos, Vincent Zoete, Florence Pojer, Michal Bassani-Sternberg, Alexandre Harari, David Gfeller.
-
-Version: Immunity 56, 1359–1375.e1–e13; DOI 10.1016/j.immuni.2023.03.009; 31 pages.
-
-Source: https://www.sciencedirect.com/science/article/pii/S1074761323001292
-
-© 2023 The Authors. Published by Elsevier Inc..
-
-CC-BY-NC-4.0: https://creativecommons.org/licenses/by-nc/4.0/
-
-Changes: PDF text extraction and chunking; Extracted Cc controls except TAB/LF/CR escaped after chunking as visible codepoint markers; exact offsets recorded in the historical normalization.json preparation file (not separately included in this package). Embeddings and Chroma index generated from these chunks.
-
-Scope: No separately credited reproduction exclusion located in local text/caption review. This is not a grant for underlying datasets, software, benchmark excerpts or linked materials. Pages 19–31 are integral STAR+METHODS through e13. The page-15 supplemental-information link points to separate materials not included or cleared. Publisher HTML unavailable during review; local in-file notice is the evidence.
-
-## Qualifications
-
-NetMHCpan and MixMHC2pred covered reuse must be noncommercial. Preserve author,
-copyright, license and modification notices; no endorsement is implied.
-
-Canonical remote-byte identity of the retained ReAct and Self-RAG PDFs is unverified;
-their local printed versions match the version-specific licensed arXiv records.
-Comprehensive rights to every embedded third-party excerpt remain unverified.
-Article licenses do not independently authorize linked datasets, code or external
-supplements. No such separate materials are included. Integral article appendices
-and MixMHC2pred STAR+METHODS pages are part of the reviewed PDFs.
-
-The immutable bundle records exact source checksums and normalization provenance.
-Do not modify its contents or add this notice inside it. API credentials and runtime
-provider charges are not included in the coursework package.
+| Paper | Authors | Year | License | Source |
+| --- | --- | --- | --- | --- |
+| Improving language models by retrieving from trillions of tokens | Sebastian Borgeaud, Arthur Mensch, Jordan Hoffmann, Trevor Cai, Eliza Rutherford, Katie Millican et al. | 2021 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2112.04426> |
+| Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection | Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, Hannaneh Hajishirzi | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.11511> |
+| From Local to Global: A Graph RAG Approach to Query-Focused Summarization | Darren Edge, Ha Trinh, Newman Cheng, Joshua Bradley, Alex Chao, Apurva Mody et al. | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2404.16130> |
+| RECOMP: Improving Retrieval-Augmented LMs with Compression and Selective Augmentation | Fangyuan Xu, Weijia Shi, Eunsol Choi | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.04408> |
+| Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity | Soyeong Jeong, Jinheon Baek, Sukmin Cho, Sung Ju Hwang, Jong C. Park | 2024 | [CC0-1.0](http://creativecommons.org/publicdomain/zero/1.0/) | <https://arxiv.org/abs/2403.14403> |
+| RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval | Parth Sarthi, Salman Abdullah, Aditi Tuli, Shubh Khanna, Anna Goldie, Christopher D. Manning | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2401.18059> |
+| Unsupervised Dense Information Retrieval with Contrastive Learning | Gautier Izacard, Mathilde Caron, Lucas Hosseini, Sebastian Riedel, Piotr Bojanowski, Armand Joulin et al. | 2021 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2112.09118> |
+| Dense X Retrieval: What Retrieval Granularity Should We Use? | Tong Chen, Hongwei Wang, Sihao Chen, Wenhao Yu, Kaixin Ma, Xinran Zhao et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2312.06648> |
+| M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation | Jianlv Chen, Shitao Xiao, Peitian Zhang, Kun Luo, Defu Lian, Zheng Liu | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2402.03216> |
+| ReAct: Synergizing Reasoning and Acting in Language Models | Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan et al. | 2022 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2210.03629> |
+| Reflexion: Language Agents with Verbal Reinforcement Learning | Noah Shinn, Federico Cassano, Edward Berman, Ashwin Gopinath, Karthik Narasimhan, Shunyu Yao | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2303.11366> |
+| Tree of Thoughts: Deliberate Problem Solving with Large Language Models | Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2305.10601> |
+| Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia et al. | 2022 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2201.11903> |
+| Self-Consistency Improves Chain of Thought Reasoning in Language Models | Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed Chi, Sharan Narang et al. | 2022 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2203.11171> |
+| Gorilla: Large Language Model Connected with Massive APIs | Shishir G. Patil, Tianjun Zhang, Xin Wang, Joseph E. Gonzalez | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2305.15334> |
+| ReWOO: Decoupling Reasoning from Observations for Efficient Augmented Language Models | Binfeng Xu, Zhiyuan Peng, Bowen Lei, Subhabrata Mukherjee, Yuchen Liu, Dongkuan Xu | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2305.18323> |
+| Language Agent Tree Search Unifies Reasoning Acting and Planning in Language Models | Andy Zhou, Kai Yan, Michal Shlapentokh-Rothman, Haohan Wang, Yu-Xiong Wang | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.04406> |
+| Executable Code Actions Elicit Better LLM Agents | Xingyao Wang, Yangyi Chen, Lifan Yuan, Yizhe Zhang, Yunzhu Li, Hao Peng et al. | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2402.01030> |
+| Large Language Models as Tool Makers | Tianle Cai, Xuezhi Wang, Tengyu Ma, Xinyun Chen, Denny Zhou | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2305.17126> |
+| ToolQA: A Dataset for LLM Question Answering with External Tools | Yuchen Zhuang, Yue Yu, Kuan Wang, Haotian Sun, Chao Zhang | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2306.13304> |
+| AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation | Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang Zhu et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2308.08155> |
+| MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework | Sirui Hong, Mingchen Zhuge, Jiaqi Chen, Xiawu Zheng, Yuheng Cheng, Ceyao Zhang et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2308.00352> |
+| CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society | Guohao Li, Hasan Abed Al Kader Hammoud, Hani Itani, Dmitrii Khizbullin, Bernard Ghanem | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2303.17760> |
+| Improving Factuality and Reasoning in Language Models through Multiagent Debate | Yilun Du, Shuang Li, Antonio Torralba, Joshua B. Tenenbaum, Igor Mordatch | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2305.14325> |
+| Mixture-of-Agents Enhances Large Language Model Capabilities | Junlin Wang, Jue Wang, Ben Athiwaratkun, Ce Zhang, James Zou | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2406.04692> |
+| A Survey on Large Language Model based Autonomous Agents | Lei Wang, Chen Ma, Xueyang Feng, Zeyu Zhang, Hao Yang, Jingsen Zhang et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2308.11432> |
+| The Landscape of Emerging AI Agent Architectures for Reasoning, Planning, and Tool Calling: A Survey | Tula Masterman, Sandi Besen, Mason Sawtell, Alex Chao | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2404.11584> |
+| OpenAgents: An Open Platform for Language Agents in the Wild | Tianbao Xie, Fan Zhou, Zhoujun Cheng, Peng Shi, Luoxuan Weng, Yitao Liu et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.10634> |
+| SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering | John Yang, Carlos E. Jimenez, Alexander Wettig, Kilian Lieret, Shunyu Yao, Karthik Narasimhan et al. | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2405.15793> |
+| Agentless: Demystifying LLM-based Software Engineering Agents | Chunqiu Steven Xia, Yinlin Deng, Soren Dunn, Lingming Zhang | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2407.01489> |
+| Ragas: Automated Evaluation of Retrieval Augmented Generation | Shahul Es, Jithin James, Luis Espinosa-Anke, Steven Schockaert | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2309.15217> |
+| ARES: An Automated Evaluation Framework for Retrieval-Augmented Generation Systems | Jon Saad-Falcon, Omar Khattab, Christopher Potts, Matei Zaharia | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2311.09476> |
+| AgentBench: Evaluating LLMs as Agents | Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu Lei, Hanyu Lai et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2308.03688> |
+| SWE-bench: Can Language Models Resolve Real-World GitHub Issues? | Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.06770> |
+| τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains | Shunyu Yao, Noah Shinn, Pedram Razavi, Karthik Narasimhan | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2406.12045> |
+| Holistic Evaluation of Language Models | Percy Liang, Rishi Bommasani, Tony Lee, Dimitris Tsipras, Dilara Soylu, Michihiro Yasunaga et al. | 2022 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2211.09110> |
+| SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models | Potsawee Manakul, Adian Liusie, Mark J. F. Gales | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2303.08896> |
+| Prometheus: Inducing Fine-grained Evaluation Capability in Language Models | Seungone Kim, Jamin Shin, Yejin Cho, Joel Jang, Shayne Longpre, Hwaran Lee et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2310.08491> |
+| Prometheus 2: An Open Source Language Model Specialized in Evaluating Other Language Models | Seungone Kim, Juyoung Suk, Shayne Longpre, Bill Yuchen Lin, Jamin Shin, Sean Welleck et al. | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2405.01535> |
+| Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators | Yann Dubois, Balázs Galambosi, Percy Liang, Tatsunori B. Hashimoto | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2404.04475> |
+| Instruction-Following Evaluation for Large Language Models | Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha Brahma, Sujoy Basu, Yi Luan et al. | 2023 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2311.07911> |
+| From Crowdsourced Data to High-Quality Benchmarks: Arena-Hard and BenchBuilder Pipeline | Tianle Li, Wei-Lin Chiang, Evan Frick, Lisa Dunlap, Tianhao Wu, Banghua Zhu et al. | 2024 | [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/) | <https://arxiv.org/abs/2406.11939> |

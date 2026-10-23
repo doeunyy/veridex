@@ -10,8 +10,16 @@ from uuid import uuid4
 
 _CORRELATION = ContextVar("veridex_correlation", default=None)
 _LOG = logging.getLogger("uvicorn.error.veridex")
-_SERVERS = {"evidence", "web_search", "workspace"}
-_TOOLS = {"search_evidence", "search_web", "list_documents", "read_document"}
+_SERVERS = {"evidence", "workspace", "catalog", "tavily"}
+_TOOLS = {
+    "search_evidence",
+    "list_documents",
+    "read_document",
+    "describe_catalog",
+    "query_catalog_sql",
+    "tavily_search",
+    "tavily_extract",
+}
 _EXCEPTIONS = {
     "CancelledError",
     "TimeoutError",

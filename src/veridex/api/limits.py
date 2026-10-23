@@ -55,6 +55,9 @@ class Admission:
             self._semaphore.release()
 
 
+LIMITED_PATHS = {"/chat", "/api/chat/stream"}
+
+
 class ChatLimitsMiddleware:
     """Pure ASGI middleware: no extra request tasks or unbounded body buffering."""
 
@@ -67,7 +70,7 @@ class ChatLimitsMiddleware:
         if (
             scope["type"] != "http"
             or scope["method"] != "POST"
-            or scope["path"].rstrip("/") != "/chat"
+            or scope["path"].rstrip("/") not in LIMITED_PATHS
         ):
             await self.app(scope, receive, send)
             return

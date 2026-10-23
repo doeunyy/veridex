@@ -1,0 +1,2 @@
+{"id": "rag-01", "category": "rag", "label": "cold", "client_first_byte_ms": 44782, "client_ttft_ms": 69015, "client_total_ms": 86648, "server_ttft_ms": 29437, "server_total_ms": 47056, "retrieval_ms": 6736, "llm_ms": 39980, "cost_usd": 0.030274, "providers": ["gemini"]}
+{"id": "dat-01", "category": "data", "label": "cold", "client_first_byte_ms": 43810, "client_ttft_ms": 50043, "client_total_ms": 53535, "server_ttft_ms": 11744, "server_total_ms": 15226, "retrieval_ms": 67, "llm_ms": 14845, "cost_usd": 0.004775, "providers": ["gemini"]}

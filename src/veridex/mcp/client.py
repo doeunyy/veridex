@@ -8,7 +8,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 from uuid import uuid4
 
 from langchain_core.messages import ToolMessage
@@ -29,16 +29,29 @@ class MCPClientError(RuntimeError):
     """Connection, discovery, or lifecycle failure without raw connection details."""
 
 
+def tavily_connection(config: Settings | None = None) -> Connection:
+    """Tavily Remote MCP over Streamable HTTP; the key travels only as a query parameter."""
+    config = config or settings
+    key = (config.tavily_api_key or "").strip()
+    if not key:
+        raise MCPClientError("TAVILY_API_KEY is not configured.")
+    return {
+        "transport": "streamable_http",
+        "url": f"{config.tavily_mcp_url}?{urlencode({'tavilyApiKey': key})}",
+    }
+
+
 def default_connections(
     *,
     project_root: Path | None = None,
     config: Settings | None = None,
     python_executable: str | None = None,
+    include_remote: bool = True,
 ) -> dict[str, Connection]:
-    """Build adapter-native STDIO connections; construction starts no processes.
+    """Local STDIO servers plus Tavily Remote MCP; construction starts no processes.
 
-    Explicit connection dictionaries can replace these with Streamable HTTP later.
-    Secrets are passed only to the relevant child environment, never CLI inspection output.
+    Secrets are passed only to the relevant child environment or remote URL, never to
+    CLI inspection output or error messages.
     """
     root = (project_root or Path(__file__).resolve().parents[3]).resolve()
     config = config or settings
@@ -55,13 +68,13 @@ def default_connections(
             "PROVIDER_TIMEOUT_SECONDS": str(config.provider_timeout_seconds),
             "PROVIDER_MAX_RETRIES": str(config.provider_max_retries),
         },
-        "web_search": {"TAVILY_API_KEY": config.tavily_api_key or ""},
         "workspace": {
             "DOCUMENTS_DIR": path(config.documents_dir),
-            "WORKSPACE_MANIFEST_PATH": path(config.workspace_manifest_path),
+            "CORPUS_MANIFEST_PATH": path(config.corpus_manifest_path),
         },
+        "catalog": {"CATALOG_PATH": path(config.catalog_path)},
     }
-    return {
+    connections: dict[str, Connection] = {
         name: {
             "transport": "stdio",
             "command": python_executable or sys.executable,
@@ -71,6 +84,9 @@ def default_connections(
         }
         for name, environment in environments.items()
     }
+    if include_remote:
+        connections["tavily"] = tavily_connection(config)
+    return connections
 
 
 def create_client(connections: dict[str, Connection] | None = None) -> MultiServerMCPClient:

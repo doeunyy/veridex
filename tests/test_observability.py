@@ -67,9 +67,9 @@ async def test_safe_http_failure_and_exception_normalization(caplog):
 @pytest.mark.parametrize("failure", [None, RuntimeError, asyncio.CancelledError])
 async def test_mcp_events_and_cancellation(caplog, failure):
     caplog.set_level("INFO")
-    registry = ToolRegistry(SimpleNamespace(connections={"web_search": {}}), timeout=1)
+    registry = ToolRegistry(SimpleNamespace(connections={"tavily": {}}), timeout=1)
     registry._active = True
-    request = SimpleNamespace(server_name="web_search", name="search_web", args="SECRET-args")
+    request = SimpleNamespace(server_name="tavily", name="tavily_search", args="SECRET-args")
 
     async def handler(request):
         assert correlation_id() is not None
@@ -91,7 +91,7 @@ async def test_mcp_events_and_cancellation(caplog, failure):
         "mcp_tool_started",
         "mcp_tool_failed" if failure else "mcp_tool_completed",
     ]
-    assert all(e["server"] == "web_search" and e["tool"] == "search_web" for e in emitted)
+    assert all(e["server"] == "tavily" and e["tool"] == "tavily_search" for e in emitted)
     assert "SECRET" not in caplog.text
 
 
@@ -108,11 +108,11 @@ async def test_protocol_failure_is_not_logged_as_completed(caplog):
     from mcp.types import CallToolResult, TextContent
 
     caplog.set_level("INFO")
-    registry = ToolRegistry(SimpleNamespace(connections={"web_search": {}}), timeout=1)
+    registry = ToolRegistry(SimpleNamespace(connections={"tavily": {}}), timeout=1)
     registry._active = True
     result = CallToolResult(isError=True, content=[TextContent(type="text", text="SECRET-payload")])
     handler = AsyncMock(return_value=result)
-    request = SimpleNamespace(server_name="web_search", name="search_web")
+    request = SimpleNamespace(server_name="tavily", name="tavily_search")
     assert await registry._intercept(request, handler) is result
     assert events(caplog)[-1]["event"] == "mcp_tool_failed"
     assert "SECRET" not in caplog.text
@@ -122,19 +122,18 @@ async def test_protocol_failure_is_not_logged_as_completed(caplog):
 async def test_model_failure_is_attributed_without_payload(caplog):
     from langchain_core.messages import HumanMessage
 
-    from veridex.agent.graph import build_agent_graph
+    from veridex.config import Settings
+    from veridex.llm.router import invoke_with_fallback, route
 
     caplog.set_level("INFO")
-    model = SimpleNamespace(
-        bind_tools=lambda tools: SimpleNamespace(
-            ainvoke=AsyncMock(side_effect=TimeoutError("SECRET-provider-body"))
-        )
-    )
-    graph = build_agent_graph(tools=[], model=model, async_mode=True)
+    model = SimpleNamespace(ainvoke=AsyncMock(side_effect=TimeoutError("SECRET-provider-body")))
+    config = Settings(_env_file=None, google_api_key="g")
     with turn_context(), pytest.raises(TimeoutError):
-        await graph.ainvoke(
-            {"messages": [HumanMessage(content="SECRET-prompt")]},
-            {"configurable": {"thread_id": "SECRET-thread"}},
+        await invoke_with_fallback(
+            route("supervisor", config=config),
+            [HumanMessage(content="SECRET-prompt")],
+            factory=lambda provider: model,
+            config=config,
         )
     assert events(caplog)[-1]["event"] == "model_failed"
     assert events(caplog)[-1]["exception_class"] == "TimeoutError"

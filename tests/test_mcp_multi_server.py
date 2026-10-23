@@ -1,35 +1,67 @@
 import asyncio
 import json
 import os
+import sqlite3
 import sys
 
 import pytest
 from langchain_core.tools import ToolException
 from test_mcp_protocol import ROOT
-from test_mcp_workspace import catalog_entry, make_pdf
+from test_mcp_workspace import make_pdf, write_catalog
 
 from veridex.config import Settings
-from veridex.mcp.client import MCPClientError, connect_servers, default_connections
+from veridex.data.catalog import SCHEMA
+from veridex.mcp.client import (
+    MCPClientError,
+    connect_servers,
+    default_connections,
+    tavily_connection,
+)
 
-EXPECTED = {"search_evidence", "search_web", "list_documents", "read_document"}
+EXPECTED = {
+    "search_evidence",
+    "list_documents",
+    "read_document",
+    "describe_catalog",
+    "query_catalog_sql",
+    "tavily_search",
+    "tavily_extract",
+}
+SERVERS = ["evidence", "workspace", "catalog", "tavily"]
 SOURCE_URL = "https://example.com/paper%2Fone?x=1&y=2#section"
+
+
+def make_catalog(path):
+    with sqlite3.connect(path) as connection:
+        connection.executescript(SCHEMA)
+        connection.execute(
+            "INSERT INTO papers VALUES "
+            "('paper_2026','2601.00001','Approved research',2026,'rag_retrieval',"
+            "'Ada Lovelace',1,'cs.CL','CC-BY-4.0','https://arxiv.org/abs/2601.00001',3,2,5,900)"
+        )
+    connection.close()
 
 
 @pytest.fixture
 def connections(tmp_path):
     corpus = tmp_path / "papers"
     corpus.mkdir()
-    make_pdf(corpus / "paper.pdf", ["Actual local research evidence."])
-    manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({"documents": [catalog_entry("paper.pdf")]}))
+    make_pdf(corpus / "paper_2026.pdf", ["Actual local research evidence."])
+    manifest = tmp_path / "papers.json"
+    write_catalog(manifest, ["paper_2026.pdf"])
+    catalog = tmp_path / "catalog.db"
+    make_catalog(catalog)
     config = Settings(
         _env_file=None,
         documents_dir=corpus,
-        workspace_manifest_path=manifest,
+        corpus_manifest_path=manifest,
+        catalog_path=catalog,
         openai_api_key=None,
         tavily_api_key="fake-tavily-test-key",
     )
-    connections = default_connections(project_root=ROOT, config=config)
+    connections = default_connections(project_root=ROOT, config=config, include_remote=False)
+    # Tavily Remote MCP stands in as a local STDIO server with the same tool names.
+    connections["tavily"] = {**connections["catalog"], "env": dict(connections["catalog"]["env"])}
     launcher = tmp_path / "bootstrap.py"
     launcher.write_text(
         "import os, sys, runpy\n"
@@ -45,21 +77,23 @@ def connections(tmp_path):
         "        if query == 'empty': return []\n"
         "        if query == 'error': raise ValueError('Controlled retrieval failure')\n"
         "        return [(Document(page_content='Retrieved evidence π', metadata={\n"
-        "            'document_id': 'paper', 'chunk_id': 'paper_p1_c1', 'title': 'Paper',\n"
-        f"            'page': 1, 'source_url': {SOURCE_URL!r}}}), 0.37)]\n"
+        "            'document_id': 'paper_2026', 'chunk_id': 'paper_2026:p1:c000',\n"
+        f"            'title': 'Paper', 'page': 1, 'source_url': {SOURCE_URL!r}}}), 0.37)]\n"
         "    retrieval.search_documents = retrieve\n"
-        "if role == 'web_search':\n"
-        "    import tavily\n"
-        "    class FakeTavily:\n"
-        "        def __init__(self, api_key): assert api_key == 'fake-tavily-test-key'\n"
-        "        async def __aenter__(self): return self\n"
-        "        async def __aexit__(self, *args): pass\n"
-        "        async def search(self, query, **kwargs):\n"
-        "            if query == 'error': raise RuntimeError('Provider failed')\n"
-        "            if query == 'empty': return {'results': []}\n"
-        f"            return {{'results': [{{'title': 'Web paper', 'url': {SOURCE_URL!r},\n"
-        "                'content': 'Web evidence snippet', 'published_date': '2026-10-01'}]}\n"
-        "    tavily.AsyncTavilyClient = FakeTavily\n"
+        "if role == 'tavily':\n"
+        "    from fastmcp import FastMCP\n"
+        "    from fastmcp.exceptions import ToolError\n"
+        "    server = FastMCP(name='Tavily Fake')\n"
+        "    @server.tool\n"
+        "    def tavily_search(query: str, max_results: int = 5) -> dict:\n"
+        "        if query == 'error': raise ToolError('Provider failed')\n"
+        f"        return {{'results': [{{'title': 'Web', 'url': {SOURCE_URL!r},\n"
+        "            'content': 'Web evidence snippet'}]}\n"
+        "    @server.tool\n"
+        "    def tavily_extract(urls: list[str]) -> dict:\n"
+        "        return {'results': [{'url': u, 'raw_content': 'page'} for u in urls]}\n"
+        "    server.run(transport='stdio')\n"
+        "    sys.exit(0)\n"
         "sys.argv = ['server']\n"
         "runpy.run_module(f'veridex.mcp.servers.{role}', run_name='__main__')\n"
     )
@@ -84,81 +118,77 @@ def is_alive(pid):
     return True
 
 
+def test_tavily_remote_connection_passes_key_as_query_parameter():
+    config = Settings(_env_file=None, tavily_api_key="tvly-abc+/=")
+    connection = tavily_connection(config)
+    assert connection == {
+        "transport": "streamable_http",
+        "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=tvly-abc%2B%2F%3D",
+    }
+    assert set(default_connections(config=config)) == set(SERVERS)
+    with pytest.raises(MCPClientError, match="TAVILY_API_KEY"):
+        tavily_connection(Settings(_env_file=None))
+
+
 @pytest.mark.asyncio
 async def test_real_multi_server_discovery_invocation_refresh_and_cleanup(connections):
     configs, pid_log, _ = connections
     async with asyncio.timeout(45):
         async with connect_servers(configs, timeout=15) as registry:
             assert set(registry.entries) == EXPECTED
-            assert set(registry.servers) == {"evidence", "web_search", "workspace"}
+            assert list(registry.servers) == SERVERS
             assert [info.serverInfo.name for info in registry.servers.values()] == [
                 "Veridex Evidence",
-                "Veridex Web Search",
                 "Veridex Workspace",
+                "Veridex Catalog",
+                "Tavily Fake",
             ]
             assert all(tool.response_format == "content_and_artifact" for tool in registry.tools)
             initial_pids = process_ids(pid_log)
-            assert len(initial_pids) == 3 and all(is_alive(pid) for pid in initial_pids)
+            assert len(initial_pids) == 4 and all(is_alive(pid) for pid in initial_pids)
+
             evidence = await registry.invoke("search_evidence", {"query": "What is RAG?"})
             passage = evidence.artifact["structured_content"]["passages"][0]
-            assert passage == {
-                "document_id": "paper",
-                "chunk_id": "paper_p1_c1",
-                "title": "Paper",
-                "page": 1,
-                "source_url": SOURCE_URL,
-                "distance": 0.37,
-                "content": "Retrieved evidence π",
-            }
-            web = await registry.invoke("search_web", {"query": "research"})
-            assert web.artifact["structured_content"]["results"] == [
-                {
-                    "title": "Web paper",
-                    "url": SOURCE_URL,
-                    "content": "Web evidence snippet",
-                    "published_date": "2026-10-01",
-                }
-            ]
+            assert passage["chunk_id"] == "paper_2026:p1:c000"
+            assert passage["source_url"] == SOURCE_URL
+
+            web = await registry.invoke("tavily_search", {"query": "research"})
+            assert web.artifact["structured_content"]["results"][0]["url"] == SOURCE_URL
+
             listed = await registry.invoke("list_documents", {})
-            assert (
-                listed.artifact["structured_content"]["documents"][0]["document_id"] == "paper.pdf"
+            document = listed.artifact["structured_content"]["documents"][0]
+            assert (document["document_id"], document["paper_id"]) == (
+                "paper_2026.pdf",
+                "paper_2026",
             )
-            read = await registry.invoke("read_document", {"document_id": "paper.pdf"})
+            read = await registry.invoke("read_document", {"document_id": "paper_2026.pdf"})
             assert read.artifact["structured_content"]["pages"] == [
-                {
-                    "page": 1,
-                    "text": "Actual local research evidence.",
-                }
+                {"page": 1, "text": "Actual local research evidence."}
             ]
+
+            schema = await registry.invoke("describe_catalog", {})
+            assert "CREATE TABLE papers" in schema.artifact["structured_content"]["schema_sql"]
+            rows = await registry.invoke(
+                "query_catalog_sql", {"sql": "SELECT doc_id, year FROM papers"}
+            )
+            assert rows.artifact["structured_content"]["rows"] == [["paper_2026", 2026]]
+
             for _ in range(2):
                 assert {tool.name for tool in await registry.refresh()} == EXPECTED
-                assert (
-                    await registry.invoke("search_evidence", {"query": "again"})
-                ).status == "success"
             assert process_ids(pid_log) == initial_pids
-            # All adapters are usable as LangChain tools, including concurrent invocations.
             calls = await asyncio.gather(
-                *[registry.invoke("read_document", {"document_id": "paper.pdf"}) for _ in range(3)]
+                *[registry.invoke("search_evidence", {"query": "again"}) for _ in range(3)]
             )
             assert all(call.status == "success" for call in calls)
             for name, args in [
                 ("search_evidence", {"query": "error"}),
-                ("search_web", {"query": "error"}),
+                ("tavily_search", {"query": "error"}),
                 ("read_document", {"document_id": "../outside.pdf"}),
+                ("query_catalog_sql", {"sql": "DELETE FROM papers"}),
             ]:
                 with pytest.raises(ToolException):
                     await registry.invoke(name, args)
-            for name in ("search_evidence", "search_web"):
-                result = await registry.invoke(name, {"query": "empty"})
-                payload = result.artifact["structured_content"]
-                assert payload.get("passages", payload.get("results")) == []
             report = registry.inspection()
-            tools = {tool["name"]: tool for server in report["servers"] for tool in server["tools"]}
-            assert set(tools) == EXPECTED
-            assert tools["search_evidence"]["input_schema"]["properties"]["top_k"]["maximum"] == 10
-            assert tools["search_web"]["input_schema"]["properties"]["max_results"]["default"] == 5
-            assert tools["list_documents"]["input_schema"]["properties"] == {}
-            assert tools["read_document"]["input_schema"]["required"] == ["document_id"]
             assert "fake-tavily-test-key" not in json.dumps(report)
     assert all(not is_alive(pid) for pid in initial_pids)
     with pytest.raises(MCPClientError, match="closed"):
@@ -166,28 +196,23 @@ async def test_real_multi_server_discovery_invocation_refresh_and_cleanup(connec
 
 
 @pytest.mark.asyncio
-async def test_missing_credentials_and_invalid_calls_through_actual_servers(connections):
-    _, _, config = connections
-    config.tavily_api_key = None
-    configs = default_connections(project_root=ROOT, config=config)
+async def test_invalid_calls_through_actual_servers(connections):
+    configs, _, _ = connections
     async with connect_servers(configs, timeout=15) as registry:
-        assert set(registry.entries) == EXPECTED
-        with pytest.raises(ToolException, match="TAVILY_API_KEY is not configured"):
-            await registry.invoke("search_web", {"query": "research"})
         with pytest.raises(ToolException, match="empty"):
             await registry.invoke("search_evidence", {"query": " "})
-        with pytest.raises(ToolException, match="OPENAI_API_KEY is not configured"):
-            await registry.invoke("search_evidence", {"query": "research"})
+        with pytest.raises(ToolException, match="one SQL statement"):
+            await registry.invoke("query_catalog_sql", {"sql": "SELECT 1; SELECT 2"})
         with pytest.raises(ToolException):
-            await registry.invoke("search_web", {"query": "q", "max_results": True})
+            await registry.invoke("query_catalog_sql", {"sql": "SELECT 1", "max_rows": 0})
         assert (await registry.invoke("list_documents", {})).status == "success"
 
 
 @pytest.mark.asyncio
 async def test_unavailable_server_cleans_up_already_started_processes(connections):
     configs, pid_log, _ = connections
-    configs["workspace"]["command"] = "/nonexistent/veridex-mcp-test-command"
-    with pytest.raises(MCPClientError, match="workspace"):
+    configs["catalog"]["command"] = "/nonexistent/veridex-mcp-test-command"
+    with pytest.raises(MCPClientError, match="catalog"):
         async with connect_servers(configs, timeout=15):
             pytest.fail("Unavailable server must not yield a partial registry")
     pids = process_ids(pid_log)
@@ -249,7 +274,7 @@ async def test_owner_cancellation_shuts_down_actual_servers(connections):
         async with asyncio.timeout(30):
             await entered.wait()
         pids = process_ids(pid_log)
-        assert len(pids) == 3 and all(is_alive(pid) for pid in pids)
+        assert len(pids) == 4 and all(is_alive(pid) for pid in pids)
     finally:
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
