@@ -1,0 +1,4 @@
+# Cloud Build upload context (gcloud builds submit). Mirrors .dockerignore so the
+# Corpus v3 bundle under .artifacts/ is uploaded even though Git ignores it.
+.gcloudignore
+#!include:.dockerignore

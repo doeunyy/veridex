@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: requirements.txt matches uv.lock
+        run: |
+          uv export --format requirements-txt --no-hashes --no-dev --no-emit-project --frozen -q -o "$RUNNER_TEMP/requirements.txt"
+          diff <(grep -v '^#' "$RUNNER_TEMP/requirements.txt") <(grep -v '^#' requirements.txt)
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Offline test suite
+        run: uv run pytest -q

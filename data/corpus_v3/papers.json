@@ -1,0 +1,1115 @@
+{
+  "corpus": "veridex-corpus-v3",
+  "description": "LLM agents, retrieval-augmented generation and evaluation research papers (arXiv, CC BY 4.0 / CC0 only).",
+  "papers": [
+    {
+      "doc_id": "retro_2021",
+      "arxiv_id": "2112.04426",
+      "title": "Improving language models by retrieving from trillions of tokens",
+      "authors": [
+        "Sebastian Borgeaud",
+        "Arthur Mensch",
+        "Jordan Hoffmann",
+        "Trevor Cai",
+        "Eliza Rutherford",
+        "Katie Millican",
+        "George van den Driessche",
+        "Jean-Baptiste Lespiau",
+        "Bogdan Damoc",
+        "Aidan Clark",
+        "Diego de Las Casas",
+        "Aurelia Guy",
+        "Jacob Menick",
+        "Roman Ring",
+        "Tom Hennigan",
+        "Saffron Huang",
+        "Loren Maggiore",
+        "Chris Jones",
+        "Albin Cassirer",
+        "Andy Brock",
+        "Michela Paganini",
+        "Geoffrey Irving",
+        "Oriol Vinyals",
+        "Simon Osindero",
+        "Karen Simonyan",
+        "Jack W. Rae",
+        "Erich Elsen",
+        "Laurent Sifre"
+      ],
+      "year": 2021,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2112.04426",
+      "pdf_url": "https://arxiv.org/pdf/2112.04426"
+    },
+    {
+      "doc_id": "self_rag_2023",
+      "arxiv_id": "2310.11511",
+      "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+      "authors": [
+        "Akari Asai",
+        "Zeqiu Wu",
+        "Yizhong Wang",
+        "Avirup Sil",
+        "Hannaneh Hajishirzi"
+      ],
+      "year": 2023,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.11511",
+      "pdf_url": "https://arxiv.org/pdf/2310.11511"
+    },
+    {
+      "doc_id": "graphrag_2024",
+      "arxiv_id": "2404.16130",
+      "title": "From Local to Global: A Graph RAG Approach to Query-Focused Summarization",
+      "authors": [
+        "Darren Edge",
+        "Ha Trinh",
+        "Newman Cheng",
+        "Joshua Bradley",
+        "Alex Chao",
+        "Apurva Mody",
+        "Steven Truitt",
+        "Dasha Metropolitansky",
+        "Robert Osazuwa Ness",
+        "Jonathan Larson"
+      ],
+      "year": 2024,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.IR"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2404.16130",
+      "pdf_url": "https://arxiv.org/pdf/2404.16130"
+    },
+    {
+      "doc_id": "recomp_2023",
+      "arxiv_id": "2310.04408",
+      "title": "RECOMP: Improving Retrieval-Augmented LMs with Compression and Selective Augmentation",
+      "authors": [
+        "Fangyuan Xu",
+        "Weijia Shi",
+        "Eunsol Choi"
+      ],
+      "year": 2023,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.04408",
+      "pdf_url": "https://arxiv.org/pdf/2310.04408"
+    },
+    {
+      "doc_id": "adaptive_rag_2024",
+      "arxiv_id": "2403.14403",
+      "title": "Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity",
+      "authors": [
+        "Soyeong Jeong",
+        "Jinheon Baek",
+        "Sukmin Cho",
+        "Sung Ju Hwang",
+        "Jong C. Park"
+      ],
+      "year": 2024,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC0-1.0",
+      "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "abs_url": "https://arxiv.org/abs/2403.14403",
+      "pdf_url": "https://arxiv.org/pdf/2403.14403"
+    },
+    {
+      "doc_id": "raptor_2024",
+      "arxiv_id": "2401.18059",
+      "title": "RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval",
+      "authors": [
+        "Parth Sarthi",
+        "Salman Abdullah",
+        "Aditi Tuli",
+        "Shubh Khanna",
+        "Anna Goldie",
+        "Christopher D. Manning"
+      ],
+      "year": 2024,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2401.18059",
+      "pdf_url": "https://arxiv.org/pdf/2401.18059"
+    },
+    {
+      "doc_id": "contriever_2021",
+      "arxiv_id": "2112.09118",
+      "title": "Unsupervised Dense Information Retrieval with Contrastive Learning",
+      "authors": [
+        "Gautier Izacard",
+        "Mathilde Caron",
+        "Lucas Hosseini",
+        "Sebastian Riedel",
+        "Piotr Bojanowski",
+        "Armand Joulin",
+        "Edouard Grave"
+      ],
+      "year": 2021,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.IR",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2112.09118",
+      "pdf_url": "https://arxiv.org/pdf/2112.09118"
+    },
+    {
+      "doc_id": "dense_x_retrieval_2023",
+      "arxiv_id": "2312.06648",
+      "title": "Dense X Retrieval: What Retrieval Granularity Should We Use?",
+      "authors": [
+        "Tong Chen",
+        "Hongwei Wang",
+        "Sihao Chen",
+        "Wenhao Yu",
+        "Kaixin Ma",
+        "Xinran Zhao",
+        "Hongming Zhang",
+        "Dong Yu"
+      ],
+      "year": 2023,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.IR"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2312.06648",
+      "pdf_url": "https://arxiv.org/pdf/2312.06648"
+    },
+    {
+      "doc_id": "m3_embedding_2024",
+      "arxiv_id": "2402.03216",
+      "title": "M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation",
+      "authors": [
+        "Jianlv Chen",
+        "Shitao Xiao",
+        "Peitian Zhang",
+        "Kun Luo",
+        "Defu Lian",
+        "Zheng Liu"
+      ],
+      "year": 2024,
+      "topic": "rag_retrieval",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2402.03216",
+      "pdf_url": "https://arxiv.org/pdf/2402.03216"
+    },
+    {
+      "doc_id": "react_2022",
+      "arxiv_id": "2210.03629",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "authors": [
+        "Shunyu Yao",
+        "Jeffrey Zhao",
+        "Dian Yu",
+        "Nan Du",
+        "Izhak Shafran",
+        "Karthik Narasimhan",
+        "Yuan Cao"
+      ],
+      "year": 2022,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2210.03629",
+      "pdf_url": "https://arxiv.org/pdf/2210.03629"
+    },
+    {
+      "doc_id": "reflexion_2023",
+      "arxiv_id": "2303.11366",
+      "title": "Reflexion: Language Agents with Verbal Reinforcement Learning",
+      "authors": [
+        "Noah Shinn",
+        "Federico Cassano",
+        "Edward Berman",
+        "Ashwin Gopinath",
+        "Karthik Narasimhan",
+        "Shunyu Yao"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2303.11366",
+      "pdf_url": "https://arxiv.org/pdf/2303.11366"
+    },
+    {
+      "doc_id": "tree_of_thoughts_2023",
+      "arxiv_id": "2305.10601",
+      "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
+      "authors": [
+        "Shunyu Yao",
+        "Dian Yu",
+        "Jeffrey Zhao",
+        "Izhak Shafran",
+        "Thomas L. Griffiths",
+        "Yuan Cao",
+        "Karthik Narasimhan"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2305.10601",
+      "pdf_url": "https://arxiv.org/pdf/2305.10601"
+    },
+    {
+      "doc_id": "chain_of_thought_2022",
+      "arxiv_id": "2201.11903",
+      "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+      "authors": [
+        "Jason Wei",
+        "Xuezhi Wang",
+        "Dale Schuurmans",
+        "Maarten Bosma",
+        "Brian Ichter",
+        "Fei Xia",
+        "Ed Chi",
+        "Quoc Le",
+        "Denny Zhou"
+      ],
+      "year": 2022,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2201.11903",
+      "pdf_url": "https://arxiv.org/pdf/2201.11903"
+    },
+    {
+      "doc_id": "self_consistency_2022",
+      "arxiv_id": "2203.11171",
+      "title": "Self-Consistency Improves Chain of Thought Reasoning in Language Models",
+      "authors": [
+        "Xuezhi Wang",
+        "Jason Wei",
+        "Dale Schuurmans",
+        "Quoc Le",
+        "Ed Chi",
+        "Sharan Narang",
+        "Aakanksha Chowdhery",
+        "Denny Zhou"
+      ],
+      "year": 2022,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2203.11171",
+      "pdf_url": "https://arxiv.org/pdf/2203.11171"
+    },
+    {
+      "doc_id": "gorilla_2023",
+      "arxiv_id": "2305.15334",
+      "title": "Gorilla: Large Language Model Connected with Massive APIs",
+      "authors": [
+        "Shishir G. Patil",
+        "Tianjun Zhang",
+        "Xin Wang",
+        "Joseph E. Gonzalez"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2305.15334",
+      "pdf_url": "https://arxiv.org/pdf/2305.15334"
+    },
+    {
+      "doc_id": "rewoo_2023",
+      "arxiv_id": "2305.18323",
+      "title": "ReWOO: Decoupling Reasoning from Observations for Efficient Augmented Language Models",
+      "authors": [
+        "Binfeng Xu",
+        "Zhiyuan Peng",
+        "Bowen Lei",
+        "Subhabrata Mukherjee",
+        "Yuchen Liu",
+        "Dongkuan Xu"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2305.18323",
+      "pdf_url": "https://arxiv.org/pdf/2305.18323"
+    },
+    {
+      "doc_id": "lats_2023",
+      "arxiv_id": "2310.04406",
+      "title": "Language Agent Tree Search Unifies Reasoning Acting and Planning in Language Models",
+      "authors": [
+        "Andy Zhou",
+        "Kai Yan",
+        "Michal Shlapentokh-Rothman",
+        "Haohan Wang",
+        "Yu-Xiong Wang"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.04406",
+      "pdf_url": "https://arxiv.org/pdf/2310.04406"
+    },
+    {
+      "doc_id": "codeact_2024",
+      "arxiv_id": "2402.01030",
+      "title": "Executable Code Actions Elicit Better LLM Agents",
+      "authors": [
+        "Xingyao Wang",
+        "Yangyi Chen",
+        "Lifan Yuan",
+        "Yizhe Zhang",
+        "Yunzhu Li",
+        "Hao Peng",
+        "Heng Ji"
+      ],
+      "year": 2024,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2402.01030",
+      "pdf_url": "https://arxiv.org/pdf/2402.01030"
+    },
+    {
+      "doc_id": "llm_tool_makers_2023",
+      "arxiv_id": "2305.17126",
+      "title": "Large Language Models as Tool Makers",
+      "authors": [
+        "Tianle Cai",
+        "Xuezhi Wang",
+        "Tengyu Ma",
+        "Xinyun Chen",
+        "Denny Zhou"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL",
+        "stat.ML"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2305.17126",
+      "pdf_url": "https://arxiv.org/pdf/2305.17126"
+    },
+    {
+      "doc_id": "toolqa_2023",
+      "arxiv_id": "2306.13304",
+      "title": "ToolQA: A Dataset for LLM Question Answering with External Tools",
+      "authors": [
+        "Yuchen Zhuang",
+        "Yue Yu",
+        "Kuan Wang",
+        "Haotian Sun",
+        "Chao Zhang"
+      ],
+      "year": 2023,
+      "topic": "agent_reasoning_tools",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2306.13304",
+      "pdf_url": "https://arxiv.org/pdf/2306.13304"
+    },
+    {
+      "doc_id": "autogen_2023",
+      "arxiv_id": "2308.08155",
+      "title": "AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation",
+      "authors": [
+        "Qingyun Wu",
+        "Gagan Bansal",
+        "Jieyu Zhang",
+        "Yiran Wu",
+        "Beibin Li",
+        "Erkang Zhu",
+        "Li Jiang",
+        "Xiaoyun Zhang",
+        "Shaokun Zhang",
+        "Jiale Liu",
+        "Ahmed Hassan Awadallah",
+        "Ryen W White",
+        "Doug Burger",
+        "Chi Wang"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2308.08155",
+      "pdf_url": "https://arxiv.org/pdf/2308.08155"
+    },
+    {
+      "doc_id": "metagpt_2023",
+      "arxiv_id": "2308.00352",
+      "title": "MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework",
+      "authors": [
+        "Sirui Hong",
+        "Mingchen Zhuge",
+        "Jiaqi Chen",
+        "Xiawu Zheng",
+        "Yuheng Cheng",
+        "Ceyao Zhang",
+        "Jinlin Wang",
+        "Zili Wang",
+        "Steven Ka Shing Yau",
+        "Zijuan Lin",
+        "Liyang Zhou",
+        "Chenyu Ran",
+        "Lingfeng Xiao",
+        "Chenglin Wu",
+        "Jürgen Schmidhuber"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.AI",
+        "cs.MA"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2308.00352",
+      "pdf_url": "https://arxiv.org/pdf/2308.00352"
+    },
+    {
+      "doc_id": "camel_2023",
+      "arxiv_id": "2303.17760",
+      "title": "CAMEL: Communicative Agents for \"Mind\" Exploration of Large Language Model Society",
+      "authors": [
+        "Guohao Li",
+        "Hasan Abed Al Kader Hammoud",
+        "Hani Itani",
+        "Dmitrii Khizbullin",
+        "Bernard Ghanem"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.CY",
+        "cs.LG",
+        "cs.MA"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2303.17760",
+      "pdf_url": "https://arxiv.org/pdf/2303.17760"
+    },
+    {
+      "doc_id": "multiagent_debate_2023",
+      "arxiv_id": "2305.14325",
+      "title": "Improving Factuality and Reasoning in Language Models through Multiagent Debate",
+      "authors": [
+        "Yilun Du",
+        "Shuang Li",
+        "Antonio Torralba",
+        "Joshua B. Tenenbaum",
+        "Igor Mordatch"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2305.14325",
+      "pdf_url": "https://arxiv.org/pdf/2305.14325"
+    },
+    {
+      "doc_id": "mixture_of_agents_2024",
+      "arxiv_id": "2406.04692",
+      "title": "Mixture-of-Agents Enhances Large Language Model Capabilities",
+      "authors": [
+        "Junlin Wang",
+        "Jue Wang",
+        "Ben Athiwaratkun",
+        "Ce Zhang",
+        "James Zou"
+      ],
+      "year": 2024,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2406.04692",
+      "pdf_url": "https://arxiv.org/pdf/2406.04692"
+    },
+    {
+      "doc_id": "agent_survey_2023",
+      "arxiv_id": "2308.11432",
+      "title": "A Survey on Large Language Model based Autonomous Agents",
+      "authors": [
+        "Lei Wang",
+        "Chen Ma",
+        "Xueyang Feng",
+        "Zeyu Zhang",
+        "Hao Yang",
+        "Jingsen Zhang",
+        "Zhiyuan Chen",
+        "Jiakai Tang",
+        "Xu Chen",
+        "Yankai Lin",
+        "Wayne Xin Zhao",
+        "Zhewei Wei",
+        "Ji-Rong Wen"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2308.11432",
+      "pdf_url": "https://arxiv.org/pdf/2308.11432"
+    },
+    {
+      "doc_id": "agent_architectures_landscape_2024",
+      "arxiv_id": "2404.11584",
+      "title": "The Landscape of Emerging AI Agent Architectures for Reasoning, Planning, and Tool Calling: A Survey",
+      "authors": [
+        "Tula Masterman",
+        "Sandi Besen",
+        "Mason Sawtell",
+        "Alex Chao"
+      ],
+      "year": 2024,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2404.11584",
+      "pdf_url": "https://arxiv.org/pdf/2404.11584"
+    },
+    {
+      "doc_id": "openagents_2023",
+      "arxiv_id": "2310.10634",
+      "title": "OpenAgents: An Open Platform for Language Agents in the Wild",
+      "authors": [
+        "Tianbao Xie",
+        "Fan Zhou",
+        "Zhoujun Cheng",
+        "Peng Shi",
+        "Luoxuan Weng",
+        "Yitao Liu",
+        "Toh Jing Hua",
+        "Junning Zhao",
+        "Qian Liu",
+        "Che Liu",
+        "Leo Z. Liu",
+        "Yiheng Xu",
+        "Hongjin Su",
+        "Dongchan Shin",
+        "Caiming Xiong",
+        "Tao Yu"
+      ],
+      "year": 2023,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.10634",
+      "pdf_url": "https://arxiv.org/pdf/2310.10634"
+    },
+    {
+      "doc_id": "swe_agent_2024",
+      "arxiv_id": "2405.15793",
+      "title": "SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering",
+      "authors": [
+        "John Yang",
+        "Carlos E. Jimenez",
+        "Alexander Wettig",
+        "Kilian Lieret",
+        "Shunyu Yao",
+        "Karthik Narasimhan",
+        "Ofir Press"
+      ],
+      "year": 2024,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.SE",
+        "cs.AI",
+        "cs.CL",
+        "cs.HC",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2405.15793",
+      "pdf_url": "https://arxiv.org/pdf/2405.15793"
+    },
+    {
+      "doc_id": "agentless_2024",
+      "arxiv_id": "2407.01489",
+      "title": "Agentless: Demystifying LLM-based Software Engineering Agents",
+      "authors": [
+        "Chunqiu Steven Xia",
+        "Yinlin Deng",
+        "Soren Dunn",
+        "Lingming Zhang"
+      ],
+      "year": 2024,
+      "topic": "multi_agent_systems",
+      "categories": [
+        "cs.SE",
+        "cs.AI",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2407.01489",
+      "pdf_url": "https://arxiv.org/pdf/2407.01489"
+    },
+    {
+      "doc_id": "ragas_2023",
+      "arxiv_id": "2309.15217",
+      "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation",
+      "authors": [
+        "Shahul Es",
+        "Jithin James",
+        "Luis Espinosa-Anke",
+        "Steven Schockaert"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2309.15217",
+      "pdf_url": "https://arxiv.org/pdf/2309.15217"
+    },
+    {
+      "doc_id": "ares_2023",
+      "arxiv_id": "2311.09476",
+      "title": "ARES: An Automated Evaluation Framework for Retrieval-Augmented Generation Systems",
+      "authors": [
+        "Jon Saad-Falcon",
+        "Omar Khattab",
+        "Christopher Potts",
+        "Matei Zaharia"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.IR"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2311.09476",
+      "pdf_url": "https://arxiv.org/pdf/2311.09476"
+    },
+    {
+      "doc_id": "agentbench_2023",
+      "arxiv_id": "2308.03688",
+      "title": "AgentBench: Evaluating LLMs as Agents",
+      "authors": [
+        "Xiao Liu",
+        "Hao Yu",
+        "Hanchen Zhang",
+        "Yifan Xu",
+        "Xuanyu Lei",
+        "Hanyu Lai",
+        "Yu Gu",
+        "Hangliang Ding",
+        "Kaiwen Men",
+        "Kejuan Yang",
+        "Shudan Zhang",
+        "Xiang Deng",
+        "Aohan Zeng",
+        "Zhengxiao Du",
+        "Chenhui Zhang",
+        "Sheng Shen",
+        "Tianjun Zhang",
+        "Yu Su",
+        "Huan Sun",
+        "Minlie Huang",
+        "Yuxiao Dong",
+        "Jie Tang"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2308.03688",
+      "pdf_url": "https://arxiv.org/pdf/2308.03688"
+    },
+    {
+      "doc_id": "swe_bench_2023",
+      "arxiv_id": "2310.06770",
+      "title": "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?",
+      "authors": [
+        "Carlos E. Jimenez",
+        "John Yang",
+        "Alexander Wettig",
+        "Shunyu Yao",
+        "Kexin Pei",
+        "Ofir Press",
+        "Karthik Narasimhan"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.SE"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.06770",
+      "pdf_url": "https://arxiv.org/pdf/2310.06770"
+    },
+    {
+      "doc_id": "tau_bench_2024",
+      "arxiv_id": "2406.12045",
+      "title": "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains",
+      "authors": [
+        "Shunyu Yao",
+        "Noah Shinn",
+        "Pedram Razavi",
+        "Karthik Narasimhan"
+      ],
+      "year": 2024,
+      "topic": "evaluation",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2406.12045",
+      "pdf_url": "https://arxiv.org/pdf/2406.12045"
+    },
+    {
+      "doc_id": "helm_2022",
+      "arxiv_id": "2211.09110",
+      "title": "Holistic Evaluation of Language Models",
+      "authors": [
+        "Percy Liang",
+        "Rishi Bommasani",
+        "Tony Lee",
+        "Dimitris Tsipras",
+        "Dilara Soylu",
+        "Michihiro Yasunaga",
+        "Yian Zhang",
+        "Deepak Narayanan",
+        "Yuhuai Wu",
+        "Ananya Kumar",
+        "Benjamin Newman",
+        "Binhang Yuan",
+        "Bobby Yan",
+        "Ce Zhang",
+        "Christian Cosgrove",
+        "Christopher D. Manning",
+        "Christopher Ré",
+        "Diana Acosta-Navas",
+        "Drew A. Hudson",
+        "Eric Zelikman",
+        "Esin Durmus",
+        "Faisal Ladhak",
+        "Frieda Rong",
+        "Hongyu Ren",
+        "Huaxiu Yao",
+        "Jue Wang",
+        "Keshav Santhanam",
+        "Laurel Orr",
+        "Lucia Zheng",
+        "Mert Yuksekgonul",
+        "Mirac Suzgun",
+        "Nathan Kim",
+        "Neel Guha",
+        "Niladri Chatterji",
+        "Omar Khattab",
+        "Peter Henderson",
+        "Qian Huang",
+        "Ryan Chi",
+        "Sang Michael Xie",
+        "Shibani Santurkar",
+        "Surya Ganguli",
+        "Tatsunori Hashimoto",
+        "Thomas Icard",
+        "Tianyi Zhang",
+        "Vishrav Chaudhary",
+        "William Wang",
+        "Xuechen Li",
+        "Yifan Mai",
+        "Yuhui Zhang",
+        "Yuta Koreeda"
+      ],
+      "year": 2022,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2211.09110",
+      "pdf_url": "https://arxiv.org/pdf/2211.09110"
+    },
+    {
+      "doc_id": "selfcheckgpt_2023",
+      "arxiv_id": "2303.08896",
+      "title": "SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models",
+      "authors": [
+        "Potsawee Manakul",
+        "Adian Liusie",
+        "Mark J. F. Gales"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2303.08896",
+      "pdf_url": "https://arxiv.org/pdf/2303.08896"
+    },
+    {
+      "doc_id": "prometheus_2023",
+      "arxiv_id": "2310.08491",
+      "title": "Prometheus: Inducing Fine-grained Evaluation Capability in Language Models",
+      "authors": [
+        "Seungone Kim",
+        "Jamin Shin",
+        "Yejin Cho",
+        "Joel Jang",
+        "Shayne Longpre",
+        "Hwaran Lee",
+        "Sangdoo Yun",
+        "Seongjin Shin",
+        "Sungdong Kim",
+        "James Thorne",
+        "Minjoon Seo"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2310.08491",
+      "pdf_url": "https://arxiv.org/pdf/2310.08491"
+    },
+    {
+      "doc_id": "prometheus_2_2024",
+      "arxiv_id": "2405.01535",
+      "title": "Prometheus 2: An Open Source Language Model Specialized in Evaluating Other Language Models",
+      "authors": [
+        "Seungone Kim",
+        "Juyoung Suk",
+        "Shayne Longpre",
+        "Bill Yuchen Lin",
+        "Jamin Shin",
+        "Sean Welleck",
+        "Graham Neubig",
+        "Moontae Lee",
+        "Kyungjae Lee",
+        "Minjoon Seo"
+      ],
+      "year": 2024,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2405.01535",
+      "pdf_url": "https://arxiv.org/pdf/2405.01535"
+    },
+    {
+      "doc_id": "length_controlled_alpacaeval_2024",
+      "arxiv_id": "2404.04475",
+      "title": "Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators",
+      "authors": [
+        "Yann Dubois",
+        "Balázs Galambosi",
+        "Percy Liang",
+        "Tatsunori B. Hashimoto"
+      ],
+      "year": 2024,
+      "topic": "evaluation",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL",
+        "stat.ML"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2404.04475",
+      "pdf_url": "https://arxiv.org/pdf/2404.04475"
+    },
+    {
+      "doc_id": "ifeval_2023",
+      "arxiv_id": "2311.07911",
+      "title": "Instruction-Following Evaluation for Large Language Models",
+      "authors": [
+        "Jeffrey Zhou",
+        "Tianjian Lu",
+        "Swaroop Mishra",
+        "Siddhartha Brahma",
+        "Sujoy Basu",
+        "Yi Luan",
+        "Denny Zhou",
+        "Le Hou"
+      ],
+      "year": 2023,
+      "topic": "evaluation",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2311.07911",
+      "pdf_url": "https://arxiv.org/pdf/2311.07911"
+    },
+    {
+      "doc_id": "arena_hard_2024",
+      "arxiv_id": "2406.11939",
+      "title": "From Crowdsourced Data to High-Quality Benchmarks: Arena-Hard and BenchBuilder Pipeline",
+      "authors": [
+        "Tianle Li",
+        "Wei-Lin Chiang",
+        "Evan Frick",
+        "Lisa Dunlap",
+        "Tianhao Wu",
+        "Banghua Zhu",
+        "Joseph E. Gonzalez",
+        "Ion Stoica"
+      ],
+      "year": 2024,
+      "topic": "evaluation",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "license": "CC-BY-4.0",
+      "license_url": "http://creativecommons.org/licenses/by/4.0/",
+      "abs_url": "https://arxiv.org/abs/2406.11939",
+      "pdf_url": "https://arxiv.org/pdf/2406.11939"
+    }
+  ]
+}

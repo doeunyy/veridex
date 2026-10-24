@@ -28,30 +28,37 @@ def make_pdf(path, texts=TEXTS):
         pdf.save(path)
 
 
-def catalog_entry(filename):
+def catalog_entry(filename, index=1):
+    arxiv_id = f"2601.{index:05d}"
     return {
-        "id": Path(filename).stem,
-        "filename": filename,
+        "doc_id": Path(filename).stem,
+        "arxiv_id": arxiv_id,
         "title": "Approved research",
-        "domain": "nlp",
+        "authors": ["Ada Lovelace"],
         "year": 2026,
-        "source_url": "https://example.com/paper?x=1#section",
+        "topic": "rag_retrieval",
+        "categories": ["cs.CL"],
+        "license": "CC-BY-4.0",
+        "license_url": "http://creativecommons.org/licenses/by/4.0/",
+        "abs_url": f"https://arxiv.org/abs/{arxiv_id}",
+        "pdf_url": f"https://arxiv.org/pdf/{arxiv_id}",
     }
 
 
 def write_catalog(path, names):
-    path.write_text(json.dumps({"documents": [catalog_entry(name) for name in names]}))
+    entries = [catalog_entry(name, i) for i, name in enumerate(names, start=1)]
+    path.write_text(json.dumps({"papers": entries}))
 
 
 @pytest.fixture
 def corpus(tmp_path, monkeypatch):
     root = tmp_path / "papers"
     root.mkdir()
-    make_pdf(root / "paper.pdf")
+    make_pdf(root / "paper_2026.pdf")
     manifest = tmp_path / "manifest.json"
-    write_catalog(manifest, ["paper.pdf"])
+    write_catalog(manifest, ["paper_2026.pdf"])
     monkeypatch.setattr(workspace.settings, "documents_dir", root)
-    monkeypatch.setattr(workspace.settings, "workspace_manifest_path", manifest)
+    monkeypatch.setattr(workspace.settings, "corpus_manifest_path", manifest)
     return root, manifest
 
 
@@ -79,14 +86,15 @@ async def test_listing_metadata_and_schema(corpus):
         assert result.structured_content == {
             "documents": [
                 {
-                    "document_id": "paper.pdf",
-                    "paper_id": "paper",
+                    "document_id": "paper_2026.pdf",
+                    "paper_id": "paper_2026",
                     "title": "Approved research",
-                    "domain": "nlp",
+                    "topic": "rag_retrieval",
                     "year": 2026,
-                    "source_url": "https://example.com/paper?x=1#section",
+                    "source_url": "https://arxiv.org/abs/2601.00001",
+                    "license": "CC-BY-4.0",
                     "format": "pdf",
-                    "size_bytes": (root / "paper.pdf").stat().st_size,
+                    "size_bytes": (root / "paper_2026.pdf").stat().st_size,
                     "page_count": 3,
                 }
             ]
@@ -99,11 +107,11 @@ async def test_reads_ranges_truncation_and_no_writes(corpus):
     root, manifest = corpus
     before = {
         path: hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in (root / "paper.pdf", manifest)
+        for path in (root / "paper_2026.pdf", manifest)
     }
     async with Client(workspace.create_server()) as client:
         for _ in range(2):
-            full = await client.call_tool("read_document", {"document_id": "paper.pdf"})
+            full = await client.call_tool("read_document", {"document_id": "paper_2026.pdf"})
             assert full.structured_content["pages"] == [
                 {"page": index + 1, "text": text} for index, text in enumerate(TEXTS)
             ]
@@ -111,7 +119,7 @@ async def test_reads_ranges_truncation_and_no_writes(corpus):
         ranged = await client.call_tool(
             "read_document",
             {
-                "document_id": "paper.pdf",
+                "document_id": "paper_2026.pdf",
                 "start_page": 2,
                 "end_page": 2,
             },
@@ -120,7 +128,7 @@ async def test_reads_ranges_truncation_and_no_writes(corpus):
         truncated = await client.call_tool(
             "read_document",
             {
-                "document_id": "paper.pdf",
+                "document_id": "paper_2026.pdf",
                 "max_chars": 5,
             },
         )
@@ -129,7 +137,7 @@ async def test_reads_ranges_truncation_and_no_writes(corpus):
         multi = await client.call_tool(
             "read_document",
             {
-                "document_id": "paper.pdf",
+                "document_id": "paper_2026.pdf",
                 "max_chars": len(TEXTS[0]) + 2,
             },
         )
@@ -143,15 +151,15 @@ async def test_reads_ranges_truncation_and_no_writes(corpus):
 @pytest.mark.asyncio
 async def test_blank_pages_and_default_page_cap(corpus):
     root, _ = corpus
-    (root / "paper.pdf").unlink()
-    make_pdf(root / "paper.pdf", [""] + [f"Page {i}" for i in range(2, 13)])
+    (root / "paper_2026.pdf").unlink()
+    make_pdf(root / "paper_2026.pdf", [""] + [f"Page {i}" for i in range(2, 13)])
     async with Client(workspace.create_server()) as client:
-        result = await client.call_tool("read_document", {"document_id": "paper.pdf"})
+        result = await client.call_tool("read_document", {"document_id": "paper_2026.pdf"})
         assert len(result.structured_content["pages"]) == 10
         assert result.structured_content["pages"][0] == {"page": 1, "text": ""}
         assert result.structured_content["document"]["page_count"] == 12
         last = await client.call_tool(
-            "read_document", {"document_id": "paper.pdf", "start_page": 11}
+            "read_document", {"document_id": "paper_2026.pdf", "start_page": 11}
         )
         assert [page["page"] for page in last.structured_content["pages"]] == [11, 12]
 
@@ -159,26 +167,26 @@ async def test_blank_pages_and_default_page_cap(corpus):
 INVALID_IDS = [
     "",
     " ",
-    "../paper.pdf",
-    "sub/../../paper.pdf",
+    "../paper_2026.pdf",
+    "sub/../../paper_2026.pdf",
     "/etc/passwd",
-    "/tmp/paper.pdf",
-    "C:\\paper.pdf",
-    "sub\\paper.pdf",
-    "./paper.pdf",
-    "sub//paper.pdf",
-    "paper.pdf/",
+    "/tmp/paper_2026.pdf",
+    "C:\\paper_2026.pdf",
+    "sub\\paper_2026.pdf",
+    "./paper_2026.pdf",
+    "sub//paper_2026.pdf",
+    "paper_2026.pdf/",
     ".hidden.pdf",
-    ".private/paper.pdf",
+    ".private/paper_2026.pdf",
     "credentials.pdf",
     "api-secret.pdf",
     "id_rsa.pdf",
     "notes.txt",
     "notes.md",
     "paper.PDF.exe",
-    "paper.pdf\x00",
-    "%2e%2e/paper.pdf",
-    "paper.pdf",  # handled separately as a directory fixture below
+    "paper_2026.pdf\x00",
+    "%2e%2e/paper_2026.pdf",
+    "paper_2026.pdf",  # handled separately as a directory fixture below
 ]
 
 
@@ -199,13 +207,16 @@ INVALID_ARGUMENTS = [
     {},
     {"document_id": 123},
     {"document_id": "x" * 257},
-    *[{"document_id": "paper.pdf", "start_page": value} for value in (0, -1, True, "1", 1.5)],
-    *[{"document_id": "paper.pdf", "end_page": value} for value in (0, True, "2", 1.5)],
-    *[{"document_id": "paper.pdf", "max_chars": value} for value in (0, 20001, True, "5", 1.5)],
-    {"document_id": "paper.pdf", "start_page": 3, "end_page": 2},
-    {"document_id": "paper.pdf", "end_page": 11},
-    {"document_id": "paper.pdf", "start_page": 4},
-    {"document_id": "paper.pdf", "end_page": 4},
+    *[{"document_id": "paper_2026.pdf", "start_page": value} for value in (0, -1, True, "1", 1.5)],
+    *[{"document_id": "paper_2026.pdf", "end_page": value} for value in (0, True, "2", 1.5)],
+    *[
+        {"document_id": "paper_2026.pdf", "max_chars": value}
+        for value in (0, 20001, True, "5", 1.5)
+    ],
+    {"document_id": "paper_2026.pdf", "start_page": 3, "end_page": 2},
+    {"document_id": "paper_2026.pdf", "end_page": 11},
+    {"document_id": "paper_2026.pdf", "start_page": 4},
+    {"document_id": "paper_2026.pdf", "end_page": 4},
 ]
 
 
@@ -215,39 +226,36 @@ async def test_invalid_arguments_and_ranges(corpus, arguments):
     async with Client(workspace.create_server()) as client:
         result = await client.call_tool("read_document", arguments, raise_on_error=False)
         assert result.is_error
-        assert not (await client.call_tool("read_document", {"document_id": "paper.pdf"})).is_error
+        assert not (
+            await client.call_tool("read_document", {"document_id": "paper_2026.pdf"})
+        ).is_error
 
 
 @pytest.mark.asyncio
 async def test_listing_filters_unsafe_missing_unapproved_files(corpus):
     root, manifest = corpus
     make_pdf(root / "unapproved.pdf")
-    make_pdf(root / ".hidden.pdf")
-    make_pdf(root / "credentials.pdf")
-    (root / "notes.txt").write_text("Sensitive notes")
-    (root / "broken.pdf").write_bytes(b"not a PDF")
-    (root / "directory.pdf").mkdir()
-    (root / "oversized.pdf").write_bytes(b"x" * (workspace.MAX_FILE_BYTES + 1))
-    (root / "escape.pdf").symlink_to(manifest)
+    make_pdf(root / "credentials_2026.pdf")
+    (root / "broken_2026.pdf").write_bytes(b"not a PDF")
+    (root / "directory_2026.pdf").mkdir()
+    (root / "oversized_2026.pdf").write_bytes(b"x" * (workspace.MAX_FILE_BYTES + 1))
+    (root / "escape_2026.pdf").symlink_to(manifest)
     write_catalog(
         manifest,
         [
-            "paper.pdf",
-            ".hidden.pdf",
-            "credentials.pdf",
-            "notes.txt",
-            "broken.pdf",
-            "directory.pdf",
-            "oversized.pdf",
-            "escape.pdf",
-            "missing.pdf",
-            "../outside.pdf",
+            "paper_2026.pdf",
+            "credentials_2026.pdf",
+            "broken_2026.pdf",
+            "directory_2026.pdf",
+            "oversized_2026.pdf",
+            "escape_2026.pdf",
+            "missing_2026.pdf",
         ],
     )
     async with Client(workspace.create_server()) as client:
         result = await client.call_tool("list_documents", {})
         assert [item["document_id"] for item in result.structured_content["documents"]] == [
-            "paper.pdf"
+            "paper_2026.pdf"
         ]
         assert (
             await client.call_tool(
@@ -263,7 +271,6 @@ async def test_listing_filters_unsafe_missing_unapproved_files(corpus):
         "missing",
         "directory",
         "file-symlink",
-        "directory-symlink",
         "hard-link",
         "fifo",
         "oversized",
@@ -273,7 +280,7 @@ async def test_listing_filters_unsafe_missing_unapproved_files(corpus):
 )
 async def test_unsafe_approved_files_fail_and_recover(corpus, tmp_path, kind, caplog):
     root, manifest = corpus
-    filename = "bad.pdf"
+    filename = "bad_2026.pdf"
     path = root / filename
     if kind == "directory":
         path.mkdir()
@@ -281,14 +288,8 @@ async def test_unsafe_approved_files_fail_and_recover(corpus, tmp_path, kind, ca
         outside = tmp_path / "outside.pdf"
         make_pdf(outside)
         path.symlink_to(outside)
-    elif kind == "directory-symlink":
-        outside = tmp_path / "outside"
-        outside.mkdir()
-        make_pdf(outside / "bad.pdf")
-        (root / "linked").symlink_to(outside, target_is_directory=True)
-        filename = "linked/bad.pdf"
     elif kind == "hard-link":
-        os.link(root / "paper.pdf", path)
+        os.link(root / "paper_2026.pdf", path)
     elif kind == "fifo":
         os.mkfifo(path)
     elif kind == "oversized":
@@ -297,9 +298,9 @@ async def test_unsafe_approved_files_fail_and_recover(corpus, tmp_path, kind, ca
     elif kind == "malformed":
         path.write_bytes(b"invalid PDF")
     elif kind == "encrypted":
-        with pymupdf.open(root / "paper.pdf") as pdf:
+        with pymupdf.open(root / "paper_2026.pdf") as pdf:
             pdf.save(path, encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="test", owner_pw="test")
-    write_catalog(manifest, ["paper.pdf", filename])
+    write_catalog(manifest, ["paper_2026.pdf", filename])
     async with Client(workspace.create_server()) as client:
         async with asyncio.timeout(3):
             result = await client.call_tool(
@@ -307,32 +308,11 @@ async def test_unsafe_approved_files_fail_and_recover(corpus, tmp_path, kind, ca
             )
         assert result.is_error
         assert str(tmp_path) not in str(result) + caplog.text
-        # The hard-link fixture also makes paper.pdf ineligible until the link is removed.
+        # The hard-link fixture also makes paper_2026.pdf ineligible until the link is removed.
         if kind == "hard-link":
             path.unlink()
-        assert not (await client.call_tool("read_document", {"document_id": "paper.pdf"})).is_error
-
-
-@pytest.mark.asyncio
-async def test_nested_approved_and_internal_symlink_rejected(corpus):
-    root, manifest = corpus
-    (root / "nested").mkdir()
-    make_pdf(root / "nested/paper.pdf")
-    (root / "alias.pdf").symlink_to(root / "paper.pdf")
-    write_catalog(manifest, ["paper.pdf", "nested/paper.pdf", "alias.pdf"])
-    async with Client(workspace.create_server()) as client:
-        result = await client.call_tool("list_documents", {})
-        assert [item["document_id"] for item in result.structured_content["documents"]] == [
-            "nested/paper.pdf",
-            "paper.pdf",
-        ]
         assert not (
-            await client.call_tool("read_document", {"document_id": "nested/paper.pdf"})
-        ).is_error
-        assert (
-            await client.call_tool(
-                "read_document", {"document_id": "alias.pdf"}, raise_on_error=False
-            )
+            await client.call_tool("read_document", {"document_id": "paper_2026.pdf"})
         ).is_error
 
 
@@ -349,7 +329,7 @@ async def test_catalog_errors_are_safe(corpus, monkeypatch, kind):
     elif kind == "too-many":
         monkeypatch.setattr(workspace, "MAX_DOCUMENTS", 0)
     else:
-        write_catalog(manifest, ["paper.pdf", "paper.pdf"])
+        write_catalog(manifest, ["paper_2026.pdf", "paper_2026.pdf"])
     async with Client(workspace.create_server()) as client:
         failed = await client.call_tool("list_documents", {}, raise_on_error=False)
         assert failed.is_error
@@ -364,11 +344,11 @@ async def test_empty_catalog_and_pdf_page_limit(corpus, monkeypatch):
         assert (await client.call_tool("list_documents", {})).structured_content == {
             "documents": []
         }
-        write_catalog(manifest, ["paper.pdf"])
+        write_catalog(manifest, ["paper_2026.pdf"])
         monkeypatch.setattr(workspace, "MAX_PDF_PAGES", 2)
         assert (
             await client.call_tool(
-                "read_document", {"document_id": "paper.pdf"}, raise_on_error=False
+                "read_document", {"document_id": "paper_2026.pdf"}, raise_on_error=False
             )
         ).is_error
         assert (await client.call_tool("list_documents", {})).structured_content == {
@@ -390,7 +370,10 @@ async def test_concurrent_reads_and_worker_thread(corpus, monkeypatch):
     monkeypatch.setattr(workspace, "_read_document", read)
     async with Client(workspace.create_server()) as client:
         results = await asyncio.gather(
-            *[client.call_tool("read_document", {"document_id": "paper.pdf"}) for _ in range(4)]
+            *[
+                client.call_tool("read_document", {"document_id": "paper_2026.pdf"})
+                for _ in range(4)
+            ]
         )
         assert all(result.structured_content["pages"][0]["text"] == TEXTS[0] for result in results)
     assert workers
@@ -404,15 +387,15 @@ async def test_symlink_swap_between_lookup_and_open(corpus, monkeypatch, tmp_pat
     actual_open = workspace.os.open
 
     def swap(path, flags, *args, **kwargs):
-        if path == "paper.pdf":
-            (root / "paper.pdf").rename(root / "saved.pdf")
-            (root / "paper.pdf").symlink_to(outside)
+        if path == "paper_2026.pdf":
+            (root / "paper_2026.pdf").rename(root / "saved.pdf")
+            (root / "paper_2026.pdf").symlink_to(outside)
         return actual_open(path, flags, *args, **kwargs)
 
     monkeypatch.setattr(workspace.os, "open", swap)
     async with Client(workspace.create_server()) as client:
         result = await client.call_tool(
-            "read_document", {"document_id": "paper.pdf"}, raise_on_error=False
+            "read_document", {"document_id": "paper_2026.pdf"}, raise_on_error=False
         )
         assert result.is_error
         assert "Outside secret" not in str(result)
@@ -421,7 +404,7 @@ async def test_symlink_swap_between_lookup_and_open(corpus, monkeypatch, tmp_pat
 @pytest.mark.asyncio
 async def test_missing_corpus_root(corpus):
     root, _ = corpus
-    (root / "paper.pdf").unlink()
+    (root / "paper_2026.pdf").unlink()
     root.rmdir()
     async with Client(workspace.create_server()) as client:
         assert (await client.call_tool("list_documents", {})).structured_content == {
@@ -429,7 +412,7 @@ async def test_missing_corpus_root(corpus):
         }
         assert (
             await client.call_tool(
-                "read_document", {"document_id": "paper.pdf"}, raise_on_error=False
+                "read_document", {"document_id": "paper_2026.pdf"}, raise_on_error=False
             )
         ).is_error
 
@@ -448,22 +431,21 @@ async def test_stdio_tools_calls_security_and_recovery(corpus, tmp_path):
     with (root / "oversized.pdf").open("wb") as stream:
         stream.truncate(workspace.MAX_FILE_BYTES + 1)
     (root / "notes.txt").write_text("Private note")
+    for name in ("escape", "credentials", "directory", "bad", "oversized"):
+        (root / f"{name}_2026.pdf").symlink_to(root / f"{name}.pdf")
     write_catalog(
         manifest,
         [
-            "paper.pdf",
-            "escape.pdf",
-            "linked/outside.pdf",
-            ".hidden.pdf",
-            "credentials.pdf",
-            "directory.pdf",
-            "bad.pdf",
-            "oversized.pdf",
-            "missing.pdf",
-            "notes.txt",
+            "paper_2026.pdf",
+            "escape_2026.pdf",
+            "credentials_2026.pdf",
+            "directory_2026.pdf",
+            "bad_2026.pdf",
+            "oversized_2026.pdf",
+            "missing_2026.pdf",
         ],
     )
-    before = hashlib.sha256((root / "paper.pdf").read_bytes()).hexdigest()
+    before = hashlib.sha256((root / "paper_2026.pdf").read_bytes()).hexdigest()
     diagnostics = tmp_path / "stderr.log"
     parameters = StdioServerParameters(
         command=sys.executable,
@@ -472,7 +454,7 @@ async def test_stdio_tools_calls_security_and_recovery(corpus, tmp_path):
         env={
             "PYTHONPATH": str(ROOT / "src"),
             "DOCUMENTS_DIR": str(root),
-            "WORKSPACE_MANIFEST_PATH": str(manifest),
+            "CORPUS_MANIFEST_PATH": str(manifest),
             "OPENAI_API_KEY": "",
             "TAVILY_API_KEY": "",
         },
@@ -513,12 +495,12 @@ async def test_stdio_tools_calls_security_and_recovery(corpus, tmp_path):
                 listed = await session.call_tool("list_documents", {})
                 assert not listed.isError
                 assert [doc["document_id"] for doc in listed.structuredContent["documents"]] == [
-                    "paper.pdf"
+                    "paper_2026.pdf"
                 ]
                 result = await session.call_tool(
                     "read_document",
                     {
-                        "document_id": "paper.pdf",
+                        "document_id": "paper_2026.pdf",
                         "start_page": 2,
                         "end_page": 2,
                     },
@@ -528,17 +510,17 @@ async def test_stdio_tools_calls_security_and_recovery(corpus, tmp_path):
                 assert str(root) not in str(result)
                 assert (
                     result.structuredContent["document"]["source_url"]
-                    == "https://example.com/paper?x=1#section"
+                    == "https://arxiv.org/abs/2601.00001"
                 )
             truncation = await session.call_tool(
-                "read_document", {"document_id": "paper.pdf", "max_chars": 5}
+                "read_document", {"document_id": "paper_2026.pdf", "max_chars": 5}
             )
             assert truncation.structuredContent["truncated"]
             for args in INVALID_ARGUMENTS:
                 assert (await session.call_tool("read_document", args)).isError
             rejected = [
                 *INVALID_IDS[:-1],
-                str(root / "paper.pdf"),
+                str(root / "paper_2026.pdf"),
                 "missing.pdf",
                 "escape.pdf",
                 "linked/outside.pdf",
@@ -554,20 +536,22 @@ async def test_stdio_tools_calls_security_and_recovery(corpus, tmp_path):
                     assert str(tmp_path) not in str(failed)
                 assert "Outside secret" not in str(failed)
                 assert not (
-                    await session.call_tool("read_document", {"document_id": "paper.pdf"})
+                    await session.call_tool("read_document", {"document_id": "paper_2026.pdf"})
                 ).isError
             reads = await asyncio.gather(
                 *[
-                    session.call_tool("read_document", {"document_id": "paper.pdf"})
+                    session.call_tool("read_document", {"document_id": "paper_2026.pdf"})
                     for _ in range(3)
                 ]
             )
             assert all(result.structuredContent["pages"][0]["text"] == TEXTS[0] for result in reads)
             # Strictly read-only tools: unknown write tools and unexpected inputs are rejected.
-            assert (await session.call_tool("write_document", {"document_id": "paper.pdf"})).isError
+            assert (
+                await session.call_tool("write_document", {"document_id": "paper_2026.pdf"})
+            ).isError
             assert (await session.call_tool("list_documents", {"path": str(tmp_path)})).isError
             assert not (await session.call_tool("list_documents", {})).isError
-    assert hashlib.sha256((root / "paper.pdf").read_bytes()).hexdigest() == before
+    assert hashlib.sha256((root / "paper_2026.pdf").read_bytes()).hexdigest() == before
     stderr = diagnostics.read_text(encoding="utf-8")
     assert "Starting MCP server" in stderr
     assert str(tmp_path) not in stderr

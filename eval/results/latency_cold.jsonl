@@ -1,0 +1,1 @@
+{"id": "rag-01", "category": "rag", "label": "cold", "client_first_byte_ms": 53992, "client_ttft_ms": 65108, "client_total_ms": 73546, "server_ttft_ms": 15635, "server_total_ms": 24045, "retrieval_ms": 8268, "llm_ms": 15390, "cost_usd": 0.008798, "providers": ["gemini"]}
