@@ -9,6 +9,10 @@ HTML/JS page with routing decisions, an orchestration trace and source-linked ci
 **Live:** <https://veridex-v2-596419356898.us-west1.run.app>
 (Cloud Run, GCP project `veridex-v2`, `us-west1`)
 
+**Results** ([docs/evaluation.md](docs/evaluation.md)): on 35 fixed questions RAGAS
+faithfulness is 0.90 and an answer costs $0.024 on average. On Cloud Run a warm request
+streams its first answer token after about 11 s; a cold start delays the first byte to 44–54 s.
+
 | Document | Contents |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | orchestration diagram, state schema, agents and tools, routing table, RAG pipeline, MCP tool sharing, durable state |
@@ -39,7 +43,7 @@ tool calls, and numbered citations linked to the source chunk (paper, page, arXi
 | Requirement | Used for | Access and cost (checked 2026-10-22) |
 | --- | --- | --- |
 | Python 3.13 and [uv](https://docs.astral.sh/uv/) | local development | free |
-| OpenAI API key | `gpt-6.1-sol` (reasoning, synthesis, SQL repair, RAGAS judge) and `text-embedding-3-small` | paid; about $2 / $10 per 1M input / output tokens (third-party price lists, confirm on the OpenAI dashboard); embeddings $0.02 per 1M |
+| OpenAI API key | `gpt-6.1-sol` (reasoning, synthesis, SQL repair, RAGAS judge) and `text-embedding-3-small` | paid; $2 / $10 per 1M input / output tokens (Standard tier, short context; $4 / $15 long context); embeddings $0.02 per 1M |
 | Google AI (Gemini) API key | `gemini-3.8-flash` (supervisor, lookups, long-context summaries, SQL) | paid tier $0.75 / $3.75 per 1M tokens through 2026-12-31; a free tier exists with rate limits |
 | Tavily API key | Tavily Remote MCP web search | free plan with monthly credits |
 | Google Cloud project with billing | Cloud Run, Cloud Build, Artifact Registry, Firestore, Secret Manager | USC Google Cloud education credit covers eligible usage; Cloud Run scales to zero |
@@ -102,7 +106,8 @@ STDIO servers with a local stand-in for Tavily.
 | `GET /health`, `GET /ready` | liveness, and readiness after all MCP servers connected |
 
 Request body for both chat routes: `{"query": "...", "session_id": "..."}`. Requests are
-limited per instance (body size, 4 active and 4 waiting turns, 240 s deadline).
+limited per instance: body size, active and waiting turns (4 and 4 by default, 4 and 6 on
+Cloud Run via `deploy/cloud_run.sh`) and a 240 s deadline.
 
 ## Deploy to a fresh GCP project
 
@@ -124,7 +129,9 @@ permissions, and the secrets `openai-api-key`, `gemini-api-key` and `tavily-api-
 image with Cloud Build, deploys Cloud Run (2 GiB, 2 vCPU, concurrency 10, timeout 300 s,
 0–3 instances, `--allow-unauthenticated`) with the keys from Secret Manager and
 `STATE_BACKEND=firestore`, then calls `/health`, `/ready` and `/api/info`.
-`bash deploy/cloud_run.sh verify` repeats the checks.
+`bash deploy/cloud_run.sh verify` repeats the checks. `MIN_INSTANCES=1` keeps one
+instance warm (no 44–54 s cold start, about $0.86 per day); the live service runs this way
+during grading.
 
 The image is a multi-stage `python:3.13-slim` build from the exact pins in
 `requirements.txt`, runs as a non-root user and contains the Corpus v3 PDFs, Chroma
