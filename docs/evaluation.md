@@ -8,7 +8,7 @@ a provider comparison on the 20 corpus questions, and latency on the Cloud Run s
 | --- | --- | --- | --- | --- | --- |
 | 0.90 | 0.79 | 0.96 | 1.00 | $0.024 | 2.2 s / 12.0 s / 21.2 s |
 
-A cold start (zero running instances) adds about 40–50 s before the first byte.
+A cold start (zero running instances) delays the first byte to 44–54 s.
 
 ## Method
 
@@ -20,7 +20,7 @@ A cold start (zero running instances) adds about 40–50 s before the first byte
 | RAGAS | 0.4.3; `Faithfulness`, `ResponseRelevancy` (answer relevancy), `LLMContextPrecisionWithReference`, `LLMContextRecall`; reference-free metrics only for web questions |
 | Judge | `gpt-6.1-sol` (default temperature, which GPT-6 requires) with `text-embedding-3-small` for answer relevancy |
 | Latency | client side over SSE against <https://veridex-v2-596419356898.us-west1.run.app>, with the server's own retrieval and LLM timing from the `done` event (`scripts/evaluate.py latency`) |
-| Cost | token usage reported by each provider, priced in `veridex.llm.usage` (Gemini 3.8 Flash $0.75 / $3.75 per 1M from Google's pricing page; GPT-6.1 Sol $2 / $10 per 1M from third-party price lists) |
+| Cost | token usage reported by each provider, priced in `veridex.llm.usage` (Gemini 3.8 Flash $0.75 / $3.75 per 1M from Google's pricing page; GPT-6.1 Sol $2 / $10 per 1M from OpenAI's pricing page, Standard tier, short context) |
 
 Raw results are in [`eval/results/`](../eval/results/) (files ending in `_before` are the
 first configuration, see [the change below](#change-gemini-reasoning-budgets)); the
@@ -79,8 +79,33 @@ as a fallback.
 By category: data $0.005, corpus RAG $0.020, web $0.028, summary $0.034, comparison
 $0.048 per query. A routed query uses about 13,000 Gemini input tokens on average;
 query embeddings cost under $0.0001. Building the index cost $0.012 once. Grading with
-RAGAS cost about $0.12 per question, far more than answering it. Tavily used the free
-plan's credits.
+RAGAS cost about $0.12 per question, far more than answering it.
+
+### Infrastructure cost
+
+Prices checked 2026-10-24 on the providers' pricing pages; Cloud Run prices are for
+`us-west1` with request-based billing.
+
+| Item | Basis | Per query | Notes |
+| --- | --- | --- | --- |
+| Cloud Run compute | 2 vCPU × $0.000024/vCPU-s + 2 GiB × $0.0000025/GiB-s, median 21 s | about $0.001 | upper bound: concurrent requests share an instance; covered by the monthly free tier at this volume |
+| Cloud Run idle (option) | `--min-instances=1`, idle rate $0.0000025/vCPU-s and /GiB-s | — | about $0.86 per day; enabled for grading (`MIN_INSTANCES=1`) |
+| Firestore | about 2 document writes and 1 read per turn | about $0 | within the daily free quota |
+| Tavily | 1 credit per basic search, 1 per 5 extracted URLs | $0 | free plan, 1,000 credits per month |
+| Embeddings | `text-embedding-3-small`, $0.02 per 1M tokens | under $0.0001 | index build $0.012 once |
+
+### Actual spend
+
+Totals from the provider billing dashboards on 2026-10-24, covering development, live
+tests and every evaluation run (first configuration, reasoning-budget re-run, added
+questions):
+
+| Provider | Spend | Mostly |
+| --- | --- | --- |
+| OpenAI | $16.36 | RAGAS judge (`gpt-6.1-sol`), then routed answers |
+| Gemini | $3.01 | routed answers and the Gemini-only comparison |
+| Tavily | $0 | about 120 of the 1,000 free credits |
+| **Total** | **$19.37** | |
 
 ## Provider comparison
 
@@ -163,6 +188,11 @@ processes and Tavily Remote MCP) before it serves. Locally the same container is
 about 7 s, so most of the delay is pulling and starting the image on a new instance. The
 request does not fail; it waits.
 
+**With one warm instance (`--min-instances=1`, enabled 2026-10-24 for grading):** after 21
+minutes without traffic, rag-01 returned its first event after 2.5 s, first token after
+11.1 s and the full answer after 18.6 s; no new instance was started, so the cold start
+is gone at about $0.86 per day.
+
 **Why the first token still takes about 10 s:** the answer streams from the worker's
 final model call, which comes after its tool rounds; LLM time is 80–97% of each request
 and retrieval about 1 s. The routing decision and every orchestration step stream
@@ -174,9 +204,9 @@ immediately, so the UI shows progress from about 2 s.
   references. RAGAS uses one judge model, which is also one of the two generators and
   may favour its own answers.
 - The provider comparison table predates the reasoning-budget change (see above).
-- Prices for GPT-6.1 Sol come from third-party lists; confirm on the OpenAI dashboard.
-- Latency: `--min-instances=1` during grading would remove the cold start (at the cost
-  of an always-on instance); streaming a worker's draft earlier would shorten the first
+- GPT-6.1 Sol is priced at the Standard short-context rate ($2 / $10); OpenAI's
+  long-context rate is $4 / $15, so any long-context call is underestimated here.
+- Latency: streaming a worker's draft earlier would shorten the first
   token further.
 
 ## Reproducing
@@ -191,7 +221,3 @@ uv run python scripts/evaluate.py ragas --mode gemini
 uv run python scripts/evaluate.py latency --url https://veridex-v2-596419356898.us-west1.run.app --label warm --ids rag-01 rag-04 rag-09 rag-12 rag-16 dat-01 dat-03 sum-01 web-01 web-02 cmp-01 cmp-05
 uv run python -c "from veridex.evaluation.report import write_all; print(write_all())"
 ```
-
-The whole evaluation cost about $18 (about $15 OpenAI, mostly the RAGAS judge, and $3
-Gemini) across the first configuration, the reasoning-budget re-run and the added
-questions.

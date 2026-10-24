@@ -17,6 +17,7 @@ REGION="${GCP_REGION:-us-west1}"
 SERVICE="${CLOUD_RUN_SERVICE:-veridex-v2}"
 REPOSITORY="veridex"
 RUNTIME_SA="veridex-v2-runtime@${PROJECT}.iam.gserviceaccount.com"
+MIN_INSTANCES="${MIN_INSTANCES:-0}"  # 1 keeps a warm instance (no cold start, ~$0.86/day)
 TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD)}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPOSITORY}/veridex:${TAG}"
 SECRETS=(openai-api-key gemini-api-key tavily-api-key)
@@ -64,7 +65,7 @@ deploy() {
     --allow-unauthenticated \
     --memory=2Gi --cpu=2 --cpu-boost \
     --concurrency=10 --timeout=300 \
-    --min-instances=0 --max-instances=3 \
+    --min-instances="${MIN_INSTANCES}" --max-instances=3 \
     --set-env-vars="STATE_BACKEND=firestore,FIRESTORE_PROJECT_ID=${PROJECT},API_MAX_ACTIVE_REQUESTS=4,API_MAX_WAITING_REQUESTS=6,API_REQUEST_TIMEOUT_SECONDS=240" \
     --set-secrets="OPENAI_API_KEY=openai-api-key:latest,GOOGLE_API_KEY=gemini-api-key:latest,TAVILY_API_KEY=tavily-api-key:latest"
   verify

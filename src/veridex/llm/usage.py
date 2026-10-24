@@ -3,8 +3,8 @@
 Prices are USD per 1M tokens, recorded on 2026-10-22:
 - gemini-3.8-flash: $0.75 input / $3.75 output (Google AI pricing page, paid tier,
   through 2026-12-31).
-- gpt-6.1-sol: $2.00 input / $10.00 output (third-party price lists; the OpenAI page
-  was not reachable from the build machine, so confirm on the OpenAI dashboard).
+- gpt-6.1-sol: $2.00 input / $10.00 output (OpenAI pricing page, Standard tier, short
+  context; confirmed 2026-10-24. Long-context requests cost $4.00 / $15.00).
 - text-embedding-3-small: $0.02 input (OpenAI pricing page).
 """
 
